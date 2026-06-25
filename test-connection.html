@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Conexión al Servidor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0F1B6F;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #3480BA;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0F1B6F;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .server-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-left: 4px solid #3480BA;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test de Conexión al Servidor Biométrico</h1>
+        
+        <div class="server-info">
+            <strong>Servidor configurado:</strong>
+            <div id="serverUrl" style="font-family: monospace; margin-top: 5px;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>1. Test de Conectividad Básica</h3>
+            <p>Verifica si el servidor está respondiendo</p>
+            <button onclick="testBasicConnection()">Probar Conexión</button>
+            <div id="basicResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test de Endpoints API</h3>
+            <p>Verifica si los endpoints de la API están funcionando</p>
+            <button onclick="testDevices()">GET /api/devices</button>
+            <button onclick="testPersons()">GET /api/persons</button>
+            <button onclick="testCompanies()">GET /api/companies</button>
+            <button onclick="testRecords()">GET /api/records</button>
+            <div id="apiResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test de CORS</h3>
+            <p>Verifica si hay problemas de CORS</p>
+            <button onclick="testCORS()">Probar CORS</button>
+            <div id="corsResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Configuración Actual</h3>
+            <button onclick="showConfig()">Mostrar Configuración</button>
+            <div id="configResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { SERVER_URL, API_URL } from './config.js';
+        
+        // Mostrar URL del servidor
+        document.getElementById('serverUrl').textContent = API_URL;
+        
+        // Hacer disponibles globalmente para los botones
+        window.SERVER_URL = SERVER_URL;
+        window.API_URL = API_URL;
+        
+        window.testBasicConnection = async function() {
+            const resultDiv = document.getElementById('basicResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Probando conexión...';
+            
+            try {
+                const response = await fetch(SERVER_URL, { 
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ SERVIDOR CONECTADO\n\nStatus: ${response.status}\nStatus Text: ${response.statusText}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `⚠️ Servidor respondió pero con error\n\nStatus: ${response.status}\nStatus Text: ${response.statusText}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ERROR DE CONEXIÓN\n\nNo se puede conectar al servidor.\n\nError: ${error.message}\n\nURL intentada: ${SERVER_URL}\n\nPosibles causas:\n1. El servidor no está corriendo\n2. La IP/puerto es incorrecta\n3. Firewall bloqueando la conexión\n4. Problemas de red`;
+            }
+        };
+        
+        window.testDevices = async function() {
+            await testEndpoint('/api/devices', 'Dispositivos');
+        };
+        
+        window.testPersons = async function() {
+            await testEndpoint('/api/persons', 'Personas');
+        };
+        
+        window.testCompanies = async function() {
+            await testEndpoint('/api/companies', 'Centros/Empresas');
+        };
+        
+        window.testRecords = async function() {
+            await testEndpoint('/api/records?limit=10', 'Registros');
+        };
+        
+        async function testEndpoint(endpoint, name) {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `Probando endpoint: ${endpoint}...`;
+            
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ ${name} - OK\n\nStatus: ${response.status}\nDatos recibidos: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `⚠️ ${name} - Error\n\nStatus: ${response.status}\nStatus Text: ${response.statusText}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ${name} - ERROR\n\nError: ${error.message}\n\nURL: ${API_URL}${endpoint}`;
+            }
+        }
+        
+        window.testCORS = async function() {
+            const resultDiv = document.getElementById('corsResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = 'Probando CORS...';
+            
+            try {
+                const response = await fetch(`${API_URL}/devices`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+                };
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ CORS Headers:\n\n${JSON.stringify(corsHeaders, null, 2)}`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ERROR CORS\n\nError: ${error.message}\n\nProbablemente el servidor no tiene CORS configurado correctamente.`;
+            }
+        };
+        
+        window.showConfig = function() {
+            const resultDiv = document.getElementById('configResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = `Configuración Actual:\n\nSERVER_URL: ${SERVER_URL}\nAPI_URL: ${API_URL}\n\nOrigen de la página: ${window.location.origin}\nProtocolo: ${window.location.protocol}`;
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+// Punto de entrada principal de la aplicación
+import { SERVER_URL, REFRESH_INTERVAL, state } from './config.js';
+import { elements } from './utils/dom.js';
+import { initNavigation } from './navigation.js';
+import { initModalEvents, initEditButtons } from './modals.js';
+import { fetchDevices } from './components/devices.js';
+import { fetchPersons } from './components/persons.js';
+import { fetchRecords } from './components/records.js';
+import { fetchCompanies, fetchBuildings, fetchClassrooms } from './components/organization.js';
+import { initCommands, updateCommandsData, updateFilters } from './components/commands.js';
+import { initDeviceFilters, initUserFilters, initRecordFilters, initLocationFilters } from './utils/filters.js';
+
+// Actualizar todos los datos
+async function refreshAll() {
+    // Si hay filtros activos, pausar la actualización de registros
+    if (state.autoRefreshPaused) {
+        console.log('[Auto-Refresh] Pausado - Filtros activos. Solo actualizando dispositivos y usuarios.');
+        // Solo actualizar dispositivos y usuarios, NO registros
+        await Promise.all([
+            fetchDevices(),
+            fetchCompanies(),
+            fetchBuildings(),
+            fetchClassrooms()
+        ]).catch(error => {
+            console.error('[Auto-Refresh] Error actualizando datos:', error);
+        });
+        await fetchPersons().catch(error => console.error('[Auto-Refresh] Error en personas:', error));
+        updateCommandsData(state.devices, state.persons);
+        return; // No actualizar registros
+    }
+    
+    // Actualización completa cuando no hay filtros activos
+    console.log('[Auto-Refresh] Actualizando todos los datos...');
+    await Promise.all([
+        fetchDevices(),
+        fetchCompanies(),
+        fetchBuildings(),
+        fetchClassrooms()
+    ]).catch(error => {
+        console.error('[Auto-Refresh] Error actualizando datos organizacionales:', error);
+    });
+    
+    // Actualizar filtros jerárquicos (después de cargar organizaciones)
+    updateFilters();
+    
+    // Cargar usuarios primero, luego registros (para evitar race conditions)
+    await fetchPersons().catch(error => console.error('[Auto-Refresh] Error en personas:', error));
+    await fetchRecords().catch(error => console.error('[Auto-Refresh] Error en registros:', error));
+    
+    // Actualizar datos en componente de comandos
+    updateCommandsData(state.devices, state.persons);
+}
+
+// Event listeners para botones de refresh
+function initRefreshButtons() {
+    elements.refreshDevices.addEventListener('click', () => {
+        // Reanudar actualización automática al presionar actualizar
+        if (state.autoRefreshPaused || state.filtersActive) {
+            console.log('[Refresh] Reanudando actualización automática desde botón de dispositivos');
+            state.autoRefreshPaused = false;
+            state.filtersActive = false;
+            // Ocultar indicador
+            const indicator = document.getElementById('filterActiveIndicator');
+            if (indicator) indicator.style.display = 'none';
+        }
+        fetchDevices();
+    });
+    
+    elements.refreshPersons.addEventListener('click', () => {
+        // Reanudar actualización automática al presionar actualizar
+        if (state.autoRefreshPaused || state.filtersActive) {
+            console.log('[Refresh] Reanudando actualización automática desde botón de usuarios');
+            state.autoRefreshPaused = false;
+            state.filtersActive = false;
+            // Ocultar indicador
+            const indicator = document.getElementById('filterActiveIndicator');
+            if (indicator) indicator.style.display = 'none';
+        }
+        fetchPersons();
+    });
+    
+    elements.refreshRecords.addEventListener('click', async () => {
+        // Reanudar actualización automática al presionar actualizar
+        if (state.autoRefreshPaused || state.filtersActive) {
+            console.log('[Refresh] Reanudando actualización automática desde botón de registros');
+            state.autoRefreshPaused = false;
+            state.filtersActive = false;
+            // Ocultar indicador
+            const indicator = document.getElementById('filterActiveIndicator');
+            if (indicator) indicator.style.display = 'none';
+        }
+        // Recargar usuarios primero, luego registros
+        await fetchPersons();
+        await fetchRecords();
+    });
+}
+
+// Iniciar actualización automática
+function startAutoRefresh() {
+    // Cargar datos iniciales
+    refreshAll();
+    
+    // Configurar actualización automática
+    state.autoRefreshInterval = setInterval(refreshAll, REFRESH_INTERVAL);
+}
+
+// Detener actualización automática
+function stopAutoRefresh() {
+    if (state.autoRefreshInterval) {
+        clearInterval(state.autoRefreshInterval);
+        state.autoRefreshInterval = null;
+    }
+}
+
+// Manejar visibilidad de la página
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopAutoRefresh();
+    } else {
+        startAutoRefresh();
+    }
+});
+
+// Iniciar la aplicación
+function initApp() {
+    console.log('Iniciando aplicación de monitoreo...');
+    console.log(`Servidor: ${SERVER_URL}`);
+    console.log(`Actualización automática cada ${REFRESH_INTERVAL/1000} segundos`);
+
+    // Inicializar navegación
+    initNavigation();
+    
+    // Inicializar eventos de modales y formularios
+    initModalEvents();
+    
+    // Inicializar botones de edición
+    initEditButtons();
+    
+    // Inicializar botones de refresh
+    initRefreshButtons();
+    
+    // Inicializar filtros
+   setTimeout(() => {
+        initDeviceFilters();
+        initUserFilters();
+        initRecordFilters();
+        initLocationFilters();
+    }, 500); // Esperar a que los datos se carguen
+    
+    // Inicializar comandos remotos
+    setTimeout(() => {
+        initCommands(state.devices, state.persons);
+    }, 1000); // Esperar a que los datos se carguen
+
+    // Iniciar auto-refresh
+    startAutoRefresh();
+}
+
+// Verificar autenticación antes de iniciar la aplicación
+async function checkAuth() {
+    const token = localStorage.getItem('access_token');
+    
+    // Si no hay token, redirigir a login
+    if (!token) {
+        console.log('No hay token de autenticación. Redirigiendo a login...');
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    // Verificar si el token es válido
+    try {
+        const response = await fetch(`${SERVER_URL}/api/auth/me`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            console.log('Token inválido o expirado. Redirigiendo a login...');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user_info');
+            window.location.href = 'login.html';
+            return false;
+        }
+        
+        const userData = await response.json();
+        console.log('Usuario autenticado:', userData.username);
+        return true;
+    } catch (error) {
+        console.error('Error verificando autenticación:', error);
+        // Si hay error de red, permitir acceso offline con token almacenado
+        return true;
+    }
+}
+
+// Ejecutar cuando el DOM esté listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+        const isAuthenticated = await checkAuth();
+        if (isAuthenticated) {
+            initApp();
+        }
+    });
+} else {
+    checkAuth().then(isAuthenticated => {
+        if (isAuthenticated) {
+            initApp();
+        }
+    });
+}

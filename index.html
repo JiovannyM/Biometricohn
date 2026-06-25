@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Dispositivos Biométricos</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <img src="utils/icon/Megatk store.png" alt="MEGATK" class="logo-megatk">
+            <p>Sistema de Control Biométrico</p>
+        </div>
+        <ul class="sidebar-menu">
+            <li>
+                <a href="#" class="menu-item active" data-view="registros">
+                    <span class="icon"></span>
+                    <span class="text">Registros Recientes</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-item" data-view="ubicaciones">
+                    <span class="icon"></span>
+                    <span class="text">Gestión de Ubicaciones</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-item" data-view="dispositivos">
+                    <span class="icon"></span>
+                    <span class="text">Dispositivos Biométricos</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-item" data-view="usuarios">
+                    <span class="icon"></span>
+                    <span class="text">Usuarios Registrados</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-item" data-view="comandos">
+                    <span class="icon"></span>
+                    <span class="text">Comandos Remotos</span>
+                </a>
+            </li>
+            
+        </ul>
+        <div class="sidebar-footer">
+            <div style="padding: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div id="userInfo" style="color: white; font-size: 0.9em; margin-bottom: 15px;">
+                    <strong id="currentUsername" style="display: block; margin-bottom: 5px;">Cargando...</strong>
+                    <small id="currentRole" style="opacity: 0.8;"></small>
+                </div>
+                <button onclick="goToAdmin()" id="adminBtn" class="btn btn-sm w-100 mb-2" style="display: none; background: linear-gradient(135deg, #3480BA 0%, #2a8dd8 100%); color: white; border: none; font-weight: 600; padding: 10px; transition: all 0.3s ease;" 
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)';" 
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    Panel de Administración
+                </button>
+                <button onclick="logout()" class="btn btn-sm w-100" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); font-weight: 500; padding: 10px; transition: all 0.3s ease;"
+                    onmouseover="this.style.background='rgba(220,53,69,0.8)'; this.style.borderColor='#dc3545';" 
+                    onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.3)';">
+                    Cerrar Sesión
+                </button>
+            </div>
+            <span id="lastUpdate" class="last-update"></span>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <header class="top-header">
+            <h1>Sistema de Control Biométrico</h1>
+            <div id="serverStatus" class="status-badge disconnected">
+                Servidor: Desconectado
+            </div>
+        </header>
+
+        <!-- Vista: Gestión de Ubicaciones -->
+        <section id="view-ubicaciones" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Gestión de Ubicaciones</h2>
+                    <div>
+                        <button id="addCompanyBtn" class="btn-add"> Agregar Centro/Empresa</button>
+                        <button id="addBuildingBtn" class="btn-add"> Agregar Edificio</button>
+                        <button id="addClassroomBtn" class="btn-add"> Agregar Aula</button>
+                    </div>
+                </div>
+                <div class="organization-summary">
+                    <div class="stat-item">
+                        <span class="stat-label">Centros:</span>
+                        <span id="totalCompanies" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Edificios:</span>
+                        <span id="totalBuildings" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Aulas:</span>
+                        <span id="totalClassrooms" class="stat-value">0</span>
+                    </div>
+                </div>
+
+                <!-- Botones de Navegación -->
+                <div class="location-nav">
+                    <button class="btn-nav active" data-section="companies"> Ver Centros</button>
+                    <button class="btn-nav" data-section="buildings"> Ver Edificios</button>
+                    <button class="btn-nav" data-section="classrooms"> Ver Aulas</button>
+                </div>
+
+                <!-- Centros/Empresas -->
+                <div class="location-section" id="section-companies">
+                    <h3> Centros/Empresas</h3>
+                    <!-- Búsqueda -->
+                    <div class="filters-container">
+                        <div class="filter-group">
+                            <label for="searchCompany"> Buscar:</label>
+                            <input type="text" id="searchCompany" class="filter-input" placeholder="Buscar por nombre...">
+                        </div>
+                    </div>
+                    
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Fecha de Creación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companiesTableBody">
+                            <tr>
+                                <td colspan="4" class="loading">Cargando centros...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Edificios -->
+                <div class="location-section hidden" id="section-buildings">
+                    <h3> Edificios</h3>
+                    <!-- Filtros -->
+                    <div class="filters-container">
+                        <div class="filter-group">
+                            <label for="searchBuilding"> Buscar:</label>
+                            <input type="text" id="searchBuilding" class="filter-input" placeholder="Buscar por nombre...">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterBuildingCompany"> Centro:</label>
+                            <select id="filterBuildingCompany" class="filter-select">
+                                <option value="">Todos los centros</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <button id="clearBuildingFilters" class="btn-clear-filter"> Limpiar Filtros</button>
+                        </div>
+                    </div>
+                    
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Centro</th>
+                                <th>Fecha de Creación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="buildingsTableBody">
+                            <tr>
+                                <td colspan="5" class="loading">Cargando edificios...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Aulas -->
+                <div class="location-section hidden" id="section-classrooms">
+                    <h3> Aulas</h3>
+                    <!-- Filtros -->
+                    <div class="filters-container">
+                        <div class="filter-group">
+                            <label for="searchClassroom"> Buscar:</label>
+                            <input type="text" id="searchClassroom" class="filter-input" placeholder="Buscar por nombre...">
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterClassroomCompany"> Centro:</label>
+                            <select id="filterClassroomCompany" class="filter-select">
+                                <option value="">Todos los centros</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterClassroomBuilding"> Edificio:</label>
+                            <select id="filterClassroomBuilding" class="filter-select">
+                                <option value="">Todos los edificios</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <button id="clearClassroomFilters" class="btn-clear-filter"> Limpiar Filtros</button>
+                        </div>
+                    </div>
+                    
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Edificio</th>
+                                <th>Centro</th>
+                                <th>Fecha de Creación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classroomsTableBody">
+                            <tr>
+                                <td colspan="6" class="loading">Cargando aulas...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vista: Dispositivos Biométricos -->
+        <section id="view-dispositivos" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Dispositivos Biométricos</h2>
+                    <div>
+                        <button id="addDeviceBtn" class="btn-add">
+                             Nuevo Dispositivo
+                        </button>
+                        <button id="bulkUploadBtn" class="btn-add">
+                             Carga Masiva CSV
+                        </button>
+                        <button id="refreshDevices" class="btn-refresh">
+                            Actualizar
+                        </button>
+                    </div>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total:</span>
+                        <span id="totalDevices" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item connected">
+                        <span class="stat-label">Conectados:</span>
+                        <span id="connectedDevices" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item disconnected">
+                        <span class="stat-label">Desconectados:</span>
+                        <span id="disconnectedDevices" class="stat-value">0</span>
+                    </div>
+                </div>
+                
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <label>
+                        <span>Centro:</span>
+                        <select id="filterDeviceCompany">
+                            <option value="">Todos</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Edificio:</span>
+                        <select id="filterDeviceBuilding" disabled>
+                            <option value="">Seleccione primero un centro</option>
+                        </select>
+                    </label>
+                    <button id="clearDeviceFilters" class="btn-secondary">Limpiar Filtros</button>
+                </div>
+                
+                <div id="devicesTable" class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Estado</th>
+                                <th>Número de serial</th>
+                                <th>IP</th>
+                                <th>Ubicación</th>
+                                <th>Última Actividad</th>
+                                <th>Creado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devicesBody">
+                            <tr>
+                                <td colspan="7" class="loading">Cargando dispositivos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vista: Usuarios Registrados -->
+        <section id="view-usuarios" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Usuarios Registrados</h2>
+                    <div>
+                        <button id="addPersonBtn" class="btn-add">
+                             Nueva Persona
+                        </button>
+                        <button id="refreshPersons" class="btn-refresh">
+                             Actualizar
+                        </button>
+                    </div>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Usuarios:</span>
+                        <span id="totalPersons" class="stat-value">0</span>
+                    </div>
+                </div>
+                
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <label>
+                        <span>Centro:</span>
+                        <select id="filterUserCompany">
+                            <option value="">Todos</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Edificio:</span>
+                        <select id="filterUserBuilding" disabled>
+                            <option value="">Seleccione primero un centro</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Aula:</span>
+                        <select id="filterUserClassroom" disabled>
+                            <option value="">Seleccione primero un edificio</option>
+                        </select>
+                    </label>
+                    <button id="clearUserFilters" class="btn-secondary">Limpiar Filtros</button>
+                </div>
+                
+                <div id="personsTable" class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Rol</th>
+                                <th>Ubicaciones</th>
+                                <th>Fecha Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personsBody">
+                            <tr>
+                                <td colspan="6" class="loading">Cargando usuarios...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vista: Registros Recientes -->
+        <section id="view-registros" class="view-section active">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Registros de Acceso Recientes</h2>
+                    <button id="refreshRecords" class="btn-refresh">
+                         Actualizar
+                    </button>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Registros Mostrados:</span>
+                        <span id="todayRecords" class="stat-value">0</span>
+                    </div>
+                </div>
+                
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <label>
+                        <span>Centro:</span>
+                        <select id="filterRecordCompany">
+                            <option value="">Todos</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Edificio:</span>
+                        <select id="filterRecordBuilding" disabled>
+                            <option value="">Seleccione primero un centro</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Aula:</span>
+                        <select id="filterRecordClassroom" disabled>
+                            <option value="">Seleccione primero un edificio</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Período:</span>
+                        <select id="filterRecordPeriod">
+                            <option value="all">Todos los registros</option>
+                            <option value="today">Hoy</option>
+                            <option value="yesterday">Ayer</option>
+                            <option value="week">Última semana</option>
+                            <option value="month" selected>Este mes</option>
+                        </select>
+                    </label>
+                    <label id="labelDateFrom" style="cursor: pointer;" title="Haga clic para seleccionar fecha">
+                        <span>Desde:</span>
+                        <input type="date" id="filterDateFrom">
+                    </label>
+                    <label id="labelDateTo" style="cursor: pointer;" title="Haga clic para seleccionar fecha">
+                        <span>Hasta:</span>
+                        <input type="date" id="filterDateTo">
+                    </label>
+                    <button id="clearRecordFilters" class="btn-secondary">Limpiar Filtros</button>
+                    <button id="downloadRecords" class="btn-download"> Descargar</button>
+                </div>
+                
+                <div id="recordsTable" class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Usuario</th>
+                                <th>Dispositivo</th>
+                                <th>Ubicación</th>
+                                <th>Tipo</th>
+                                <th>Temperatura</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsBody">
+                            <tr>
+                                <td colspan="6" class="loading">Cargando registros...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vista: Comandos Remotos -->
+        <section id="view-comandos" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Comandos Remotos</h2>
+                </div>
+
+                <!-- Filtros de Dispositivos -->
+                <div class="filters-bar" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6;">
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                        <!-- Filtro: Solo Conectados -->
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500;">
+                            <input type="checkbox" id="filterOnlyConnected" checked style="width: 18px; height: 18px; cursor: pointer;">
+                            <span> Solo conectados</span>
+                        </label>
+
+                        <!-- Búsqueda por texto -->
+                        <label style="flex: 1; min-width: 200px;">
+                            <span style="display: block; margin-bottom: 5px; font-weight: 500;"> Buscar dispositivo:</span>
+                            <input type="text" id="filterDeviceSearch" placeholder="SN, IP o ubicación..." 
+                                   style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px;">
+                        </label>
+
+                        <!-- Filtro: Centro -->
+                        <label style="min-width: 180px;">
+                            <span style="display: block; margin-bottom: 5px; font-weight: 500;">Centro:</span>
+                            <select id="filterCommandCompany" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                                <option value="">Todos los centros</option>
+                            </select>
+                        </label>
+
+                        <!-- Filtro: Edificio -->
+                        <label style="min-width: 180px;">
+                            <span style="display: block; margin-bottom: 5px; font-weight: 500;">Edificio:</span>
+                            <select id="filterCommandBuilding" disabled style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                                <option value="">Todos los edificios</option>
+                            </select>
+                        </label>
+
+                        <!-- Filtro: Aula -->
+                        <label style="min-width: 180px;">
+                            <span style="display: block; margin-bottom: 5px; font-weight: 500;">Aula:</span>
+                            <select id="filterCommandClassroom" disabled style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                                <option value="">Todas las aulas</option>
+                            </select>
+                        </label>
+
+                        <!-- Botones de acción -->
+                        <div style="display: flex; gap: 8px;">
+                            <button id="clearCommandFilters" class="btn-secondary" style="padding: 8px 16px; white-space: nowrap;">
+                                 Limpiar Filtros
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Contador de resultados -->
+                    <div id="filterResultCount" style="margin-top: 10px; font-size: 14px; color: #6c757d; font-weight: 500;">
+                        <!-- Se llenará dinámicamente con JavaScript -->
+                    </div>
+                </div>
+
+                <div class="commands-grid">
+                    <!-- Comando: Obtener Lista de Usuarios -->
+                    <div class="command-card">
+                        <div class="command-icon"></div>
+                        <h3>Obtener Usuarios</h3>
+                        <p>Sincroniza la lista de usuarios registrados en el dispositivo con el servidor</p>
+                        <div class="form-group">
+                            <label for="cmdGetUserDevice">Dispositivo:</label>
+                            <select id="cmdGetUserDevice" class="device-selector">
+                                <option value="">Seleccionar dispositivo...</option>
+                            </select>
+                        </div>
+                        <button id="btnGetUserList" class="btn-submit"> Obtener Lista</button>
+                        <div id="getUserStatus" class="command-status"></div>
+                    </div>
+
+                    <!-- Comando: Agregar Usuario -->
+                    <div class="command-card">
+                        <div class="command-icon"></div>
+                        <h3>Agregar Usuario</h3>
+                        <p>Envía un usuario desde el servidor al dispositivo biométrico</p>
+                        <div class="form-group">
+                            <label for="cmdAddUserDevice">Dispositivo:</label>
+                            <select id="cmdAddUserDevice" class="device-selector">
+                                <option value="">Seleccionar dispositivo...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cmdAddUserId">Usuario:</label>
+                            <select id="cmdAddUserId" class="user-selector">
+                                <option value="">Seleccionar usuario...</option>
+                            </select>
+                        </div>
+                        <button id="btnAddUser" class="btn-submit"> Enviar Usuario</button>
+                        <div id="addUserStatus" class="command-status"></div>
+                    </div>
+
+                    <!-- Comando: Quitar Acceso -->
+                    <div class="command-card">
+                        <div class="command-icon"></div>
+                        <h3>Quitar Acceso</h3>
+                        <p>Elimina un registro biométrico específico del usuario (huella, rostro, etc)</p>
+                        <div class="form-group">
+                            <label for="cmdRemoveAccessDevice">Dispositivo:</label>
+                            <select id="cmdRemoveAccessDevice" class="device-selector">
+                                <option value="">Seleccionar dispositivo...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cmdRemoveAccessUserId">Usuario:</label>
+                            <select id="cmdRemoveAccessUserId" class="user-selector">
+                                <option value="">Seleccionar usuario...</option>
+                            </select>
+                        </div>
+                        <button id="btnRemoveAccess" class="btn-cancel"> Quitar Acceso</button>
+                        <div id="removeAccessStatus" class="command-status"></div>
+                    </div>
+
+                    <!-- Comando: Eliminar Completamente -->
+                    <div class="command-card">
+                        <div class="command-icon"></div>
+                        <h3>Eliminar Completamente</h3>
+                        <p class="text-danger">Elimina TODOS los registros biométricos del usuario del dispositivo</p>
+                        <div class="form-group">
+                            <label for="cmdDeleteUserDevice">Dispositivo:</label>
+                            <select id="cmdDeleteUserDevice" class="device-selector">
+                                <option value="">Seleccionar dispositivo...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cmdDeleteUserId">Usuario:</label>
+                            <select id="cmdDeleteUserId" class="user-selector">
+                                <option value="">Seleccionar usuario...</option>
+                            </select>
+                        </div>
+                        <button id="btnDeleteUserCompletely" class="btn-danger"> Eliminar Completamente</button>
+                        <div id="deleteUserStatus" class="command-status"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal para agregar dispositivo -->
+    <div id="deviceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nuevo Dispositivo Biométrico</h3>
+                <span class="close" id="closeDeviceModal">&times;</span>
+            </div>
+            <form id="deviceForm">
+                <div class="form-group">
+                    <label for="deviceSN">Número de Serial *</label>
+                    <input type="text" id="deviceSN" required placeholder="Ej: AYSK15017215">
+                    <small>El serial del dispositivo biométrico</small>
+                </div>
+                <div class="form-group">
+                    <label for="deviceIP">Dirección IP (opcional)</label>
+                    <input type="text" id="deviceIP" placeholder="Ej: 192.168.1.100">
+                    <small>Se detectará automáticamente al conectarse</small>
+                </div>
+                <div class="form-group">
+                    <label for="deviceCompany">Centro/Empresa</label>
+                    <select id="deviceCompany">
+                        <option value="">Sin asignar</option>
+                    </select>
+                    <small>Seleccione el centro o empresa</small>
+                </div>
+                <div class="form-group">
+                    <label for="deviceBuilding">Edificio</label>
+                    <select id="deviceBuilding" disabled>
+                        <option value="">Seleccione primero un centro</option>
+                    </select>
+                    <small>Seleccione el edificio</small>
+                </div>
+                <div class="form-group">
+                    <label for="deviceClassroom">Aula</label>
+                    <select id="deviceClassroom" disabled>
+                        <option value="">Seleccione primero un edificio</option>
+                    </select>
+                    <small>Seleccione el aula donde está ubicado</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelDevice">Cancelar</button>
+                    <button type="submit" class="btn-submit">Crear Dispositivo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para editar dispositivo -->
+    <div id="editDeviceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Dispositivo</h3>
+                <span class="close" id="closeEditDeviceModal">&times;</span>
+            </div>
+            <form id="editDeviceForm">
+                <input type="hidden" id="editDeviceId">
+                <div class="form-group">
+                    <label for="editDeviceSN">Dispositivo</label>
+                    <input type="text" id="editDeviceSN" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="editDeviceIP">Dirección IP</label>
+                    <input type="text" id="editDeviceIP" placeholder="Ej: 192.168.1.100">
+                    <small>Dejar vacío para que se detecte automáticamente</small>
+                </div>
+                <div class="form-group">
+                    <label for="editDeviceCompany">Centro/Empresa</label>
+                    <select id="editDeviceCompany">
+                        <option value="">Sin asignar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editDeviceBuilding">Edificio</label>
+                    <select id="editDeviceBuilding" disabled>
+                        <option value="">Seleccione primero un centro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editDeviceClassroom">Aula</label>
+                    <select id="editDeviceClassroom" disabled>
+                        <option value="">Seleccione primero un edificio</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelEditDevice">Cancelar</button>
+                    <button type="submit" class="btn-submit">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para agregar persona -->
+    <div id="personModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Persona</h3>
+                <span class="close" id="closePersonModal">&times;</span>
+            </div>
+            <form id="personForm">
+                <div class="form-group">
+                    <label for="personID">ID de Usuario *</label>
+                    <input type="number" id="personID" required placeholder="Ej: 1" min="1" pattern="[0-9]+" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <small>Número único de identificación (enrollid) - Solo números</small>
+                </div>
+                <div class="form-group">
+                    <label for="personName">Nombre Completo *</label>
+                    <input type="text" id="personName" required placeholder="Ej: Juan Pérez">
+                </div>
+                <div class="form-group">
+                    <label for="personRole">Rol</label>
+                    <select id="personRole">
+                        <option value="0">Usuario</option>
+                        <option value="1">Administrador</option>
+                    </select>
+                </div>
+                
+                <!-- Métodos de Autenticación -->
+                <div class="form-group" style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 15px;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 10px;">Métodos de Autenticación</label>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Contraseña/PIN -->
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="usePassword" style="width: auto;">
+                            <label for="usePassword" style="margin: 0; flex: 0 0 120px;">Contraseña/PIN:</label>
+                            <input type="text" id="personPassword" placeholder="Ej: 1234" style="flex: 1;" disabled>
+                        </div>
+                        
+                        <!-- Tarjeta RFID -->
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="useCard" style="width: auto;">
+                            <label for="useCard" style="margin: 0; flex: 0 0 120px;">Tarjeta RFID:</label>
+                            <input type="text" id="personCard" placeholder="Ej: ABC123456" style="flex: 1;" disabled>
+                        </div>
+                        
+                        <!-- Huella Digital -->
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="useFingerprint" style="width: auto;">
+                            <label for="useFingerprint" style="margin: 0; flex: 0 0 120px;">Huella Digital</label>
+                            <small style="flex: 1; color: #666; font-size: 0.85em;">Requiere registro posterior en el dispositivo</small>
+                        </div>
+                        
+                        <!-- Reconocimiento Facial -->
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="useFace" style="width: auto;">
+                            <label for="useFace" style="margin: 0; flex: 0 0 120px;">Rostro Facial</label>
+                            <small style="flex: 1; color: #666; font-size: 0.85em;">Requiere captura posterior en el dispositivo</small>
+                        </div>
+                    </div>
+                    
+                    <small style="display: block; margin-top: 10px; color: #666;">
+                        ⓘ Selecciona al menos un método. Contraseña y tarjeta se crean inmediatamente, huella y rostro requieren registro físico en el biométrico.
+                    </small>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelPerson">Cancelar</button>
+                    <button type="submit" class="btn-submit">Crear Persona</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para agregar centro/empresa -->
+    <div id="companyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nuevo Centro/Empresa</h3>
+                <span class="close" id="closeCompanyModal">&times;</span>
+            </div>
+            <form id="companyForm">
+                <div class="form-group">
+                    <label for="companyName">Nombre *</label>
+                    <input type="text" id="companyName" required placeholder="Ej: Universidad Nacional">
+                </div>
+                <div class="form-group">
+                    <label for="companyCode">Código</label>
+                    <input type="text" id="companyCode" placeholder="Ej: UN001">
+                </div>
+                <div class="form-group">
+                    <label for="companyAddress">Dirección</label>
+                    <input type="text" id="companyAddress" placeholder="Ej: Av. Principal 123">
+                </div>
+                <div class="form-group">
+                    <label for="companyPhone">Teléfono</label>
+                    <input type="text" id="companyPhone" placeholder="Ej: +591 12345678">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelCompany">Cancelar</button>
+                    <button type="submit" class="btn-submit">Crear Centro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para agregar edificio -->
+    <div id="buildingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nuevo Edificio</h3>
+                <span class="close" id="closeBuildingModal">&times;</span>
+            </div>
+            <form id="buildingForm">
+                <div class="form-group">
+                    <label for="buildingCompany">Centro/Empresa *</label>
+                    <select id="buildingCompany" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="buildingName">Nombre del Edificio *</label>
+                    <input type="text" id="buildingName" required placeholder="Ej: Edificio A">
+                </div>
+                <div class="form-group">
+                    <label for="buildingCode">Código</label>
+                    <input type="text" id="buildingCode" placeholder="Ej: EDIF-A">
+                </div>
+                <div class="form-group">
+                    <label for="buildingFloors">Número de Pisos</label>
+                    <input type="number" id="buildingFloors" min="1" placeholder="Ej: 3">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelBuilding">Cancelar</button>
+                    <button type="submit" class="btn-submit">Crear Edificio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para agregar aula -->
+    <div id="classroomModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nueva Aula</h3>
+                <span class="close" id="closeClassroomModal">&times;</span>
+            </div>
+            <form id="classroomForm">
+                <div class="form-group">
+                    <label for="classroomCompany">Centro/Empresa *</label>
+                    <select id="classroomCompany" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="classroomBuilding">Edificio *</label>
+                    <select id="classroomBuilding" required disabled>
+                        <option value="">Seleccione primero un centro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="classroomName">Nombre/Número del Aula *</label>
+                    <input type="text" id="classroomName" required placeholder="Ej: Aula 101">
+                </div>
+                <div class="form-group">
+                    <label for="classroomCode">Código *</label>
+                    <input type="text" id="classroomCode" required placeholder="Ej: A-101">
+                    <small style="color: #666;">Identificador único del aula</small>
+                </div>
+                <div class="form-group">
+                    <label for="classroomFloor">Piso</label>
+                    <input type="number" id="classroomFloor" min="0" placeholder="Ej: 1">
+                </div>
+                <div class="form-group">
+                    <label for="classroomCapacity">Capacidad</label>
+                    <input type="number" id="classroomCapacity" min="1" placeholder="Ej: 30">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelClassroom">Cancelar</button>
+                    <button type="submit" class="btn-submit">Crear Aula</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para editar persona -->
+    <div id="editPersonModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Usuario</h3>
+                <span class="close" id="closeEditPersonModal">&times;</span>
+            </div>
+            <form id="editPersonForm">
+                <input type="hidden" id="editPersonId">
+                <div class="form-group">
+                    <label for="editPersonName">Nombre *</label>
+                    <input type="text" id="editPersonName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editPersonRole">Rol *</label>
+                    <select id="editPersonRole" required>
+                        <option value="0">Usuario</option>
+                        <option value="1">Administrador</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelEditPerson">Cancelar</button>
+                    <button type="submit" class="btn-submit">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para editar centro -->
+    <div id="editCompanyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Centro/Empresa</h3>
+                <span class="close" id="closeEditCompanyModal">&times;</span>
+            </div>
+            <form id="editCompanyForm">
+                <input type="hidden" id="editCompanyId">
+                <div class="form-group">
+                    <label for="editCompanyName">Nombre *</label>
+                    <input type="text" id="editCompanyName" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelEditCompany">Cancelar</button>
+                    <button type="submit" class="btn-submit">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para editar edificio -->
+    <div id="editBuildingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Edificio</h3>
+                <span class="close" id="closeEditBuildingModal">&times;</span>
+            </div>
+            <form id="editBuildingForm">
+                <input type="hidden" id="editBuildingId">
+                <div class="form-group">
+                    <label for="editBuildingName">Nombre *</label>
+                    <input type="text" id="editBuildingName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editBuildingCompany">Centro/Empresa *</label>
+                    <select id="editBuildingCompany" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelEditBuilding">Cancelar</button>
+                    <button type="submit" class="btn-submit">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para editar aula -->
+    <div id="editClassroomModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Aula</h3>
+                <span class="close" id="closeEditClassroomModal">&times;</span>
+            </div>
+            <form id="editClassroomForm">
+                <input type="hidden" id="editClassroomOriginalId">
+                <div class="form-group">
+                    <label for="editClassroomCode">Código *</label>
+                    <input type="text" id="editClassroomCode" required>
+                    <small style="color: #666;">Identificador único del aula</small>
+                </div>
+                <div class="form-group">
+                    <label for="editClassroomName">Nombre *</label>
+                    <input type="text" id="editClassroomName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editClassroomBuilding">Edificio *</label>
+                    <select id="editClassroomBuilding" required>
+                        <option value="">Seleccionar...</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelEditClassroom">Cancelar</button>
+                    <button type="submit" class="btn-submit">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para carga masiva CSV -->
+    <div id="bulkUploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Carga Masiva de Dispositivos</h3>
+                <span class="close" id="closeBulkUploadModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Suba un archivo CSV con los dispositivos a registrar. El archivo debe tener las siguientes columnas:</p>
+                <ul>
+                    <li><strong>sn</strong> (requerido): Número de serial del dispositivo</li>
+                    <li><strong>ip</strong> (opcional): Dirección IP</li>
+                    <li><strong>classroom_id</strong> (opcional): ID del aula</li>
+                </ul>
+                <div class="form-group">
+                    <label for="csvFileInput">Seleccionar archivo CSV</label>
+                    <input type="file" id="csvFileInput" accept=".csv" class="file-input">
+                </div>
+                <div id="uploadPreview" class="upload-preview" style="display: none;">
+                    <h4>Vista previa:</h4>
+                    <p id="previewCount"></p>
+                    <div id="previewTable" class="preview-scroll"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancelBulkUpload">Cancelar</button>
+                    <button type="button" class="btn-submit" id="submitBulkUpload" disabled>Subir Dispositivos</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { API_URL } from './config.js';
+        
+        // Mostrar información del usuario
+        const userInfo = localStorage.getItem('user_info');
+        if (userInfo) {
+            try {
+                const user = JSON.parse(userInfo);
+                document.getElementById('currentUsername').textContent = user.full_name || user.username;
+                document.getElementById('currentRole').textContent = `Rol: ${getRoleText(user.role)}`;
+                
+                // Mostrar botón de admin si es admin o super_admin
+                if (user.role === 'super_admin' || user.role === 'admin') {
+                    document.getElementById('adminBtn').style.display = 'block';
+                }
+
+                // Control de permisos según el rol del usuario
+                const isViewer = user.role === 'viewer';
+                const isOperatorOrAbove = ['operator', 'admin', 'super_admin'].includes(user.role);
+                const isAdminOrAbove = ['admin', 'super_admin'].includes(user.role);
+
+                // Ocultar botones de creación para viewers
+                if (isViewer) {
+                    // Botones de crear
+                    const btnAddPerson = document.getElementById('addPersonBtn');
+                    const btnAddDevice = document.getElementById('addDeviceBtn');
+                    const btnAddCompany = document.getElementById('addCompanyBtn');
+                    const btnAddBuilding = document.getElementById('addBuildingBtn');
+                    const btnAddClassroom = document.getElementById('addClassroomBtn');
+                    
+                    if (btnAddPerson) btnAddPerson.style.display = 'none';
+                    if (btnAddDevice) btnAddDevice.style.display = 'none';
+                    if (btnAddCompany) btnAddCompany.style.display = 'none';
+                    if (btnAddBuilding) btnAddBuilding.style.display = 'none';
+                    if (btnAddClassroom) btnAddClassroom.style.display = 'none';
+
+                    // Agregar mensaje informativo
+                    const headers = document.querySelectorAll('.card-header h2');
+                    headers.forEach(header => {
+                        if (!header.nextElementSibling || !header.nextElementSibling.classList.contains('viewer-notice')) {
+                            const notice = document.createElement('div');
+                            notice.className = 'viewer-notice';
+                            notice.style.cssText = 'color: #856404; background: #fff3cd; border: 1px solid #ffc107; padding: 8px 12px; border-radius: 4px; margin-top: 10px; font-size: 0.9em;';
+                            notice.innerHTML = 'ℹ️ <strong>Modo Solo Lectura:</strong> Tu rol de Visualizador solo permite consultar información.';
+                            header.parentNode.insertBefore(notice, header.nextSibling);
+                        }
+                    });
+                }
+
+                // Ocultar botones de dispositivos para operadores
+                if (user.role === 'operator') {
+                    const btnAddDevice = document.getElementById('addDeviceBtn');
+                    if (btnAddDevice) btnAddDevice.style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Error parsing user info:', error);
+            }
+        }
+        
+        function getRoleText(role) {
+            const texts = {
+                'super_admin': 'Super Administrador',
+                'admin': 'Administrador',
+                'operator': 'Operador',
+                'viewer': 'Visualizador'
+            };
+            return texts[role] || role;
+        }
+        
+        // Función de logout global
+        window.logout = function() {
+            if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('user_info');
+                window.location.href = 'login.html';
+            }
+        };
+        
+        // Función para ir al panel de admin
+        window.goToAdmin = function() {
+            window.location.href = 'admin.html';
+        };
+    </script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

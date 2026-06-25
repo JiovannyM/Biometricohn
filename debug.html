@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Debug - Conexión Servidor</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #00ff00; }
+        .test { margin: 20px 0; padding: 10px; border: 1px solid #444; }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        button { padding: 10px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug de Conexión</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        const SERVER_URL = 'http://13.58.64.227:7792';
+        const API_URL = `${SERVER_URL}/api`;
+        const results = document.getElementById('results');
+
+        function log(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = isError ? 'error' : 'success';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        async function testEndpoint(name, url) {
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test';
+            testDiv.innerHTML = `<h3>TEST: ${name}</h3><p>URL: ${url}</p><p id="${name}-status">⏳ Probando...</p>`;
+            results.appendChild(testDiv);
+            const statusP = document.getElementById(`${name}-status`);
+
+            try {
+                log(`Iniciando petición a: ${url}`);
+                const response = await fetch(url);
+                
+                log(`Response status: ${response.status}`);
+                log(`Response ok: ${response.ok}`);
+                log(`Response headers: ${JSON.stringify([...response.headers])}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                log(`✅ ${name} OK - Datos recibidos: ${JSON.stringify(data).substring(0, 200)}`);
+                statusP.innerHTML = `✅ OK - ${Array.isArray(data) ? data.length + ' items' : 'objeto recibido'}`;
+                statusP.className = 'success';
+                return data;
+            } catch (error) {
+                log(`❌ ${name} ERROR: ${error.message}`, true);
+                log(`Error completo: ${JSON.stringify(error)}`, true);
+                log(`Error name: ${error.name}`, true);
+                log(`Error stack: ${error.stack}`, true);
+                statusP.innerHTML = `❌ ERROR: ${error.message}`;
+                statusP.className = 'error';
+                return null;
+            }
+        }
+
+        // Ejecutar tests automáticamente
+        async function runTests() {
+            log('=== INICIANDO TESTS ===');
+            log(`Navegador: ${navigator.userAgent}`);
+            log(`Protocolo: ${window.location.protocol}`);
+            log(`Host: ${window.location.host}`);
+            
+            await testEndpoint('devices', `${API_URL}/devices?with_location=true`);
+            await testEndpoint('persons', `${API_URL}/persons`);
+            await testEndpoint('companies', `${API_URL}/companies`);
+            await testEndpoint('buildings', `${API_URL}/buildings`);
+            await testEndpoint('classrooms', `${API_URL}/classrooms`);
+            await testEndpoint('records', `${API_URL}/records?limit=10`);
+            
+            log('=== TESTS COMPLETADOS ===');
+        }
+
+        runTests();
+    </script>
+</body>
+</html>

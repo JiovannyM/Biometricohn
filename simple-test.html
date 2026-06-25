@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Simple</title>
+</head>
+<body>
+    <h1>Test de Conexión Simple</h1>
+    <div id="log"></div>
+    <button onclick="testFetch()">Probar Fetch</button>
+
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(msg, isError = false) {
+            const p = document.createElement('p');
+            p.style.color = isError ? 'red' : 'green';
+            p.textContent = msg;
+            log.appendChild(p);
+            console.log(msg);
+        }
+
+        async function testFetch() {
+            addLog('Iniciando test...');
+            const url = 'http://3.141.98.252:7792/api/devices';
+            addLog('URL: ' + url);
+            
+            try {
+                addLog('Haciendo fetch...');
+                const response = await fetch(url);
+                addLog('Respuesta recibida: ' + response.status);
+                
+                const data = await response.json();
+                addLog('Datos: ' + JSON.stringify(data));
+            } catch (error) {
+                addLog('ERROR: ' + error.message, true);
+                addLog('Tipo: ' + error.name, true);
+                addLog('Stack: ' + error.stack, true);
+                console.error('Error completo:', error);
+            }
+        }
+
+        // Ejecutar automáticamente
+        window.addEventListener('load', () => {
+            addLog('Página cargada');
+            addLog('Navegador: ' + navigator.userAgent);
+            testFetch();
+        });
+    </script>
+</body>
+</html>

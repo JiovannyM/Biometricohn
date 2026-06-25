@@ -1,0 +1,1057 @@
+// Configuración del servidor
+const SERVER_URL = 'http://13.58.64.227:7792';
+const API_URL = `${SERVER_URL}/api`;
+const REFRESH_INTERVAL = 5000; // 5 segundos
+
+// Variables globales
+let devicesData = [];
+let personsData = [];
+let recordsData = [];
+let companiesData = [];
+let buildingsData = [];
+let classroomsData = [];
+let autoRefreshInterval = null;
+let currentView = 'ubicaciones';
+
+// ==================== SISTEMA DE NAVEGACIÓN ====================
+function initNavigation() {
+    const menuItems = document.querySelectorAll('.menu-item');
+    const viewSections = document.querySelectorAll('.view-section');
+    
+    menuItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const viewName = item.getAttribute('data-view');
+            switchView(viewName);
+        });
+    });
+}
+
+function switchView(viewName) {
+    currentView = viewName;
+    
+    // Actualizar menú activo
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-view') === viewName) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Mostrar vista correspondiente
+    document.querySelectorAll('.view-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    const activeView = document.getElementById(`view-${viewName}`);
+    if (activeView) {
+        activeView.classList.add('active');
+    }
+    
+    // Cargar datos de la vista actual
+    loadViewData(viewName);
+}
+
+async function loadViewData(viewName) {
+    switch(viewName) {
+        case 'ubicaciones':
+            await Promise.all([
+                fetchCompanies(),
+                fetchBuildings(),
+                fetchClassrooms()
+            ]);
+            break;
+        case 'dispositivos':
+            await fetchDevices();
+            break;
+        case 'usuarios':
+            await fetchPersons();
+            break;
+        case 'registros':
+            // Cargar usuarios primero, luego registros
+            await fetchPersons();
+            await fetchRecords();
+            break;
+    }
+}
+
+// ==================== FIN SISTEMA DE NAVEGACIÓN ====================
+
+
+// Elementos del DOM
+const elements = {
+    serverStatus: document.getElementById('serverStatus'),
+    lastUpdate: document.getElementById('lastUpdate'),
+    // Organization stats
+    totalCompanies: document.getElementById('totalCompanies'),
+    totalBuildings: document.getElementById('totalBuildings'),
+    totalClassrooms: document.getElementById('totalClassrooms'),
+    // Device stats
+    totalDevices: document.getElementById('totalDevices'),
+    connectedDevices: document.getElementById('connectedDevices'),
+    disconnectedDevices: document.getElementById('disconnectedDevices'),
+    devicesBody: document.getElementById('devicesBody'),
+    totalPersons: document.getElementById('totalPersons'),
+    personsBody: document.getElementById('personsBody'),
+    todayRecords: document.getElementById('todayRecords'),
+    recordsBody: document.getElementById('recordsBody'),
+    refreshDevices: document.getElementById('refreshDevices'),
+    refreshPersons: document.getElementById('refreshPersons'),
+    refreshRecords: document.getElementById('refreshRecords'),
+    // Botones de modales - Organization
+    addCompanyBtn: document.getElementById('addCompanyBtn'),
+    addBuildingBtn: document.getElementById('addBuildingBtn'),
+    addClassroomBtn: document.getElementById('addClassroomBtn'),
+    bulkUploadBtn: document.getElementById('bulkUploadBtn'),
+    // Botones de modales - Devices & Persons
+    addDeviceBtn: document.getElementById('addDeviceBtn'),
+    addPersonBtn: document.getElementById('addPersonBtn'),
+    // Modales - Organization
+    companyModal: document.getElementById('companyModal'),
+    buildingModal: document.getElementById('buildingModal'),
+    classroomModal: document.getElementById('classroomModal'),
+    bulkUploadModal: document.getElementById('bulkUploadModal'),
+    // Modales - Devices & Persons
+    deviceModal: document.getElementById('deviceModal'),
+    personModal: document.getElementById('personModal'),
+    editDeviceModal: document.getElementById('editDeviceModal'),
+    // Formularios - Organization
+    companyForm: document.getElementById('companyForm'),
+    buildingForm: document.getElementById('buildingForm'),
+    classroomForm: document.getElementById('classroomForm'),
+    // Formularios - Devices & Persons
+    deviceForm: document.getElementById('deviceForm'),
+    personForm: document.getElementById('personForm'),
+    editDeviceForm: document.getElementById('editDeviceForm'),
+    // Cerrar modales - Organization
+    closeCompanyModal: document.getElementById('closeCompanyModal'),
+    closeBuildingModal: document.getElementById('closeBuildingModal'),
+    closeClassroomModal: document.getElementById('closeClassroomModal'),
+    closeBulkUploadModal: document.getElementById('closeBulkUploadModal'),
+    // Cerrar modales - Devices & Persons
+    closeDeviceModal: document.getElementById('closeDeviceModal'),
+    closePersonModal: document.getElementById('closePersonModal'),
+    closeEditDeviceModal: document.getElementById('closeEditDeviceModal'),
+    // Cancel buttons - Organization
+    cancelCompany: document.getElementById('cancelCompany'),
+    cancelBuilding: document.getElementById('cancelBuilding'),
+    cancelClassroom: document.getElementById('cancelClassroom'),
+    cancelBulkUpload: document.getElementById('cancelBulkUpload'),
+    // Cancel buttons - Devices & Persons
+    cancelDevice: document.getElementById('cancelDevice'),
+    cancelPerson: document.getElementById('cancelPerson'),
+    cancelEditDevice: document.getElementById('cancelEditDevice'),
+    // Bulk upload elements
+    csvFileInput: document.getElementById('csvFileInput'),
+    uploadPreview: document.getElementById('uploadPreview'),
+    previewCount: document.getElementById('previewCount'),
+    previewTable: document.getElementById('previewTable'),
+    submitBulkUpload: document.getElementById('submitBulkUpload')
+};
+
+// Funciones de utilidad
+function formatDateTime(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('es-ES', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+}
+
+function updateServerStatus(isConnected) {
+    if (isConnected) {
+        elements.serverStatus.textContent = 'Servidor: Conectado';
+        elements.serverStatus.className = 'status-badge connected';
+    } else {
+        elements.serverStatus.textContent = 'Servidor: Desconectado';
+        elements.serverStatus.className = 'status-badge disconnected';
+    }
+    elements.lastUpdate.textContent = `Última actualización: ${new Date().toLocaleTimeString('es-ES')}`;
+}
+
+// Función para hacer peticiones a la API
+async function fetchAPI(endpoint, options = {}) {
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`, options);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching ${endpoint}:`, error);
+        throw error;
+    }
+}
+
+// Obtener dispositivos con ubicación
+async function fetchDevices() {
+    try {
+        const devices = await fetchAPI('/devices?with_location=true');
+        devicesData = devices;
+        updateDevicesUI();
+        updateServerStatus(true);
+    } catch (error) {
+        updateServerStatus(false);
+        elements.devicesBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty">Error al cargar dispositivos. Verifique que el servidor esté activo.</td>
+            </tr>
+        `;
+    }
+}
+
+// Actualizar UI de dispositivos
+function updateDevicesUI() {
+    const total = devicesData.length;
+    const connected = devicesData.filter(d => d.status === 1).length;
+    const disconnected = total - connected;
+
+    elements.totalDevices.textContent = total;
+    elements.connectedDevices.textContent = connected;
+    elements.disconnectedDevices.textContent = disconnected;
+
+    if (total === 0) {
+        elements.devicesBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty">No hay dispositivos registrados</td>
+            </tr>
+        `;
+        return;
+    }
+
+    elements.devicesBody.innerHTML = devicesData.map(device => {
+        // Construir ubicación
+        let location = 'Sin asignar';
+        if (device.company_name) {
+            location = `<strong>${device.company_name}</strong>`;
+            if (device.building_name) {
+                location += `<br><small>${device.building_name}`;
+                if (device.classroom_name) {
+                    location += ` - ${device.classroom_name}`;
+                }
+                location += `</small>`;
+            }
+        }
+
+        return `
+        <tr>
+            <td>
+                <span class="device-status ${device.status === 1 ? 'online' : 'offline'}">
+                    ${device.status === 1 ? 'Conectado' : 'Desconectado'}
+                </span>
+            </td>
+            <td><strong>${device.sn}</strong></td>
+            <td>${device.ip || 'N/A'}</td>
+            <td>${location}</td>
+            <td>${formatDateTime(device.last_activity)}</td>
+            <td>${formatDateTime(device.created_at)}</td>
+            <td>
+                <button class="btn-edit" data-device-id="${device.id}" data-device-sn="${device.sn}" data-device-ip="${device.ip || ''}">
+                    Editar IP
+                </button>
+            </td>
+        </tr>
+    `;
+    }).join('');
+}
+
+// ==================== FUNCIONES DE ORGANIZACIÓN ====================
+
+// Obtener companies
+async function fetchCompanies() {
+    try {
+        const companies = await fetchAPI('/companies');
+        companiesData = companies;
+        updateOrganizationUI();
+        return companies;
+    } catch (error) {
+        console.error('Error al cargar centros/empresas:', error);
+        return [];
+    }
+}
+
+// Obtener buildings
+async function fetchBuildings(companyId = null) {
+    try {
+        const endpoint = companyId ? `/buildings?company_id=${companyId}` : '/buildings';
+        const buildings = await fetchAPI(endpoint);
+        buildingsData = buildings;
+        updateOrganizationUI();
+        return buildings;
+    } catch (error) {
+        console.error('Error al cargar edificios:', error);
+        return [];
+    }
+}
+
+// Obtener classrooms
+async function fetchClassrooms(buildingId = null) {
+    try {
+        const endpoint = buildingId ? `/classrooms?building_id=${buildingId}` : '/classrooms';
+        const classrooms = await fetchAPI(endpoint);
+        classroomsData = classrooms;
+        updateOrganizationUI();
+        return classrooms;
+    } catch (error) {
+        console.error('Error al cargar aulas:', error);
+        return [];
+    }
+}
+
+// Actualizar UI de estadísticas de organización
+function updateOrganizationUI() {
+    elements.totalCompanies.textContent = companiesData.length;
+    elements.totalBuildings.textContent = buildingsData.length;
+    elements.totalClassrooms.textContent = classroomsData.length;
+}
+
+// Cargar selectores en cascada para dispositivos
+async function loadDeviceSelectors() {
+    const deviceCompany = document.getElementById('deviceCompany');
+    const deviceBuilding = document.getElementById('deviceBuilding');
+    const deviceClassroom = document.getElementById('deviceClassroom');
+
+    // Cargar companies
+    await fetchCompanies();
+    deviceCompany.innerHTML = '<option value="">Sin asignar</option>' +
+        companiesData.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+// Cambio de company en selector de dispositivo
+async function onDeviceCompanyChange() {
+    const deviceCompany = document.getElementById('deviceCompany');
+    const deviceBuilding = document.getElementById('deviceBuilding');
+    const deviceClassroom = document.getElementById('deviceClassroom');
+    
+    const companyId = deviceCompany.value;
+    
+    if (!companyId) {
+        deviceBuilding.disabled = true;
+        deviceBuilding.innerHTML = '<option value="">Seleccione primero un centro</option>';
+        deviceClassroom.disabled = true;
+        deviceClassroom.innerHTML = '<option value="">Seleccione primero un edificio</option>';
+        return;
+    }
+    
+    // Cargar edificios de la empresa
+    const buildings = await fetchBuildings(companyId);
+    deviceBuilding.disabled = false;
+    deviceBuilding.innerHTML = '<option value="">Seleccionar...</option>' +
+        buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+    
+    deviceClassroom.disabled = true;
+    deviceClassroom.innerHTML = '<option value="">Seleccione primero un edificio</option>';
+}
+
+// Cambio de building en selector de dispositivo
+async function onDeviceBuildingChange() {
+    const deviceBuilding = document.getElementById('deviceBuilding');
+    const deviceClassroom = document.getElementById('deviceClassroom');
+    
+    const buildingId = deviceBuilding.value;
+    
+    if (!buildingId) {
+        deviceClassroom.disabled = true;
+        deviceClassroom.innerHTML = '<option value="">Seleccione primero un edificio</option>';
+        return;
+    }
+    
+    // Cargar aulas del edificio
+    const classrooms = await fetchClassrooms(buildingId);
+    deviceClassroom.disabled = false;
+    deviceClassroom.innerHTML = '<option value="">Sin asignar</option>' +
+        classrooms.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+// Cargar selectores en cascada para classroom form
+async function loadClassroomFormSelectors() {
+    const classroomCompany = document.getElementById('classroomCompany');
+    const classroomBuilding = document.getElementById('classroomBuilding');
+    
+    // Cargar companies
+    await fetchCompanies();
+    classroomCompany.innerHTML = '<option value="">Seleccionar...</option>' +
+        companiesData.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+// Cambio de company en classroom form
+async function onClassroomCompanyChange() {
+    const classroomCompany = document.getElementById('classroomCompany');
+    const classroomBuilding = document.getElementById('classroomBuilding');
+    
+    const companyId = classroomCompany.value;
+    
+    if (!companyId) {
+        classroomBuilding.disabled = true;
+        classroomBuilding.innerHTML = '<option value="">Seleccione primero un centro</option>';
+        return;
+    }
+    
+    // Cargar edificios de la empresa
+    const buildings = await fetchBuildings(companyId);
+    classroomBuilding.disabled = false;
+    classroomBuilding.innerHTML = '<option value="">Seleccionar...</option>' +
+        buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+}
+
+// Cargar companies en building form
+async function loadBuildingFormSelectors() {
+    const buildingCompany = document.getElementById('buildingCompany');
+    
+    await fetchCompanies();
+    buildingCompany.innerHTML = '<option value="">Seleccionar...</option>' +
+        companiesData.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+// ==================== FIN FUNCIONES DE ORGANIZACIÓN ====================
+
+// Obtener usuarios
+async function fetchPersons() {
+    try {
+        const persons = await fetchAPI('/persons');
+        personsData = persons;
+        updatePersonsUI();
+    } catch (error) {
+        elements.personsBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="empty">Error al cargar usuarios</td>
+            </tr>
+        `;
+    }
+}
+
+// Actualizar UI de usuarios
+function updatePersonsUI() {
+    elements.totalPersons.textContent = personsData.length;
+
+    if (personsData.length === 0) {
+        elements.personsBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="empty">No hay usuarios registrados</td>
+            </tr>
+        `;
+        return;
+    }
+
+    elements.personsBody.innerHTML = personsData.map(person => {
+        const roleName = person.roll_id === 0 ? 'Usuario' : 'Administrador';
+        return `
+            <tr>
+                <td><strong>${person.id}</strong></td>
+                <td>${person.name}</td>
+                <td>${roleName}</td>
+                <td>${formatDateTime(person.created_at)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Obtener registros recientes
+async function fetchRecords() {
+    try {
+        // Obtener todos los registros (limitados por el backend)
+        const records = await fetchAPI('/records?limit=50');
+        recordsData = records;
+        updateRecordsUI();
+    } catch (error) {
+        elements.recordsBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty">Error al cargar registros</td>
+            </tr>
+        `;
+    }
+}
+
+// Actualizar UI de registros
+function updateRecordsUI() {
+    // Verificar que personsData esté disponible
+    if (!personsData || personsData.length === 0) {
+        console.warn('Esperando datos de usuarios...');
+        // Intentar cargar usuarios si no están disponibles
+        fetchPersons().then(() => {
+            if (recordsData.length > 0) {
+                updateRecordsUI();
+            }
+        });
+        elements.recordsBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="loading">Cargando información de usuarios...</td>
+            </tr>
+        `;
+        return;
+    }
+
+    // Contar registros de hoy
+    const today = new Date().toISOString().split('T')[0];
+    const todayCount = recordsData.filter(r => 
+        r.records_time && r.records_time.startsWith(today)
+    ).length;
+    elements.todayRecords.textContent = todayCount;
+
+    if (recordsData.length === 0) {
+        elements.recordsBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty">No hay registros de asistencia</td>
+            </tr>
+        `;
+        return;
+    }
+
+    elements.recordsBody.innerHTML = recordsData.map(record => {
+        const inoutText = record.inout === 0 ? 'Entrada' : 'Salida';
+        const inoutClass = record.inout === 0 ? 'entrada' : 'salida';
+        
+        // Buscar nombre de la persona
+        const person = personsData.find(p => p.id === record.enroll_id);
+        const userName = person ? person.name : `ID: ${record.enroll_id}`;
+        
+        let tempHtml = 'N/A';
+        if (record.temperature) {
+            const isHigh = record.temperature >= 37.5;
+            tempHtml = `
+                <span class="temperature ${isHigh ? 'high' : 'normal'}">
+                    ${record.temperature}°C ${isHigh ? 'Alto' : 'OK'}
+                </span>
+            `;
+        }
+
+        return `
+            <tr>
+                <td>${formatDateTime(record.records_time)}</td>
+                <td><strong>${userName}</strong></td>
+                <td>${record.device_serial_num}</td>
+                <td><span class="record-type ${inoutClass}">${inoutText}</span></td>
+                <td>${tempHtml}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Actualizar todos los datos
+async function refreshAll() {
+    // Cargar datos de organización y dispositivos en paralelo
+    await Promise.all([
+        fetchDevices(),
+        fetchCompanies(),
+        fetchBuildings(),
+        fetchClassrooms()
+    ]);
+    
+    // Cargar usuarios primero, luego registros (para evitar race conditions)
+    await fetchPersons();
+    await fetchRecords();
+}
+
+// Event listeners
+elements.refreshDevices.addEventListener('click', fetchDevices);
+elements.refreshPersons.addEventListener('click', fetchPersons);
+elements.refreshRecords.addEventListener('click', async () => {
+    // Recargar usuarios primero, luego registros
+    await fetchPersons();
+    await fetchRecords();
+});
+
+// Event listener para botones de editar (delegación de eventos)
+elements.devicesBody.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-edit');
+    if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const deviceId = btn.getAttribute('data-device-id');
+        const deviceSN = btn.getAttribute('data-device-sn');
+        const deviceIP = btn.getAttribute('data-device-ip');
+        openEditDevice(deviceId, deviceSN, deviceIP);
+    }
+});
+
+// ============= MODALES =============
+// Abrir/cerrar modales
+function openModal(modal) {
+    modal.style.display = 'block';
+}
+
+function closeModal(modal) {
+    modal.style.display = 'none';
+}
+
+// Eventos de modales - Dispositivo
+elements.addDeviceBtn.addEventListener('click', () => {
+    loadDeviceSelectors();
+    openModal(elements.deviceModal);
+});
+elements.closeDeviceModal.addEventListener('click', () => closeModal(elements.deviceModal));
+elements.cancelDevice.addEventListener('click', () => closeModal(elements.deviceModal));
+
+// Eventos de modales - Persona
+elements.addPersonBtn.addEventListener('click', () => openModal(elements.personModal));
+elements.closePersonModal.addEventListener('click', () => closeModal(elements.personModal));
+elements.cancelPerson.addEventListener('click', () => closeModal(elements.personModal));
+
+// Eventos de modales - Company
+elements.addCompanyBtn.addEventListener('click', () => openModal(elements.companyModal));
+elements.closeCompanyModal.addEventListener('click', () => closeModal(elements.companyModal));
+elements.cancelCompany.addEventListener('click', () => closeModal(elements.companyModal));
+
+// Eventos de modales - Building
+elements.addBuildingBtn.addEventListener('click', () => {
+    loadBuildingFormSelectors();
+    openModal(elements.buildingModal);
+});
+elements.closeBuildingModal.addEventListener('click', () => closeModal(elements.buildingModal));
+elements.cancelBuilding.addEventListener('click', () => closeModal(elements.buildingModal));
+
+// Eventos de modales - Classroom
+elements.addClassroomBtn.addEventListener('click', () => {
+    loadClassroomFormSelectors();
+    openModal(elements.classroomModal);
+});
+elements.closeClassroomModal.addEventListener('click', () => closeModal(elements.classroomModal));
+elements.cancelClassroom.addEventListener('click', () => closeModal(elements.classroomModal));
+
+// Eventos de modales - Bulk Upload
+elements.bulkUploadBtn.addEventListener('click', () => openModal(elements.bulkUploadModal));
+elements.closeBulkUploadModal.addEventListener('click', () => closeModal(elements.bulkUploadModal));
+elements.cancelBulkUpload.addEventListener('click', () => closeModal(elements.bulkUploadModal));
+
+// Eventos de modales - Editar Dispositivo
+elements.closeEditDeviceModal.addEventListener('click', () => closeModal(elements.editDeviceModal));
+elements.cancelEditDevice.addEventListener('click', () => closeModal(elements.editDeviceModal));
+
+// Cerrar modal al hacer clic fuera
+window.addEventListener('click', (event) => {
+    if (event.target === elements.deviceModal) closeModal(elements.deviceModal);
+    if (event.target === elements.personModal) closeModal(elements.personModal);
+    if (event.target === elements.editDeviceModal) closeModal(elements.editDeviceModal);
+    if (event.target === elements.companyModal) closeModal(elements.companyModal);
+    if (event.target === elements.buildingModal) closeModal(elements.buildingModal);
+    if (event.target === elements.classroomModal) closeModal(elements.classroomModal);
+    if (event.target === elements.bulkUploadModal) closeModal(elements.bulkUploadModal);
+});
+
+// Eventos de cambio para selectores en cascada - Device Form
+document.getElementById('deviceCompany').addEventListener('change', onDeviceCompanyChange);
+document.getElementById('deviceBuilding').addEventListener('change', onDeviceBuildingChange);
+
+// Eventos de cambio para selectores en cascada - Classroom Form
+document.getElementById('classroomCompany').addEventListener('change', onClassroomCompanyChange);
+
+// ============= CREAR DISPOSITIVO =============
+elements.deviceForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const sn = document.getElementById('deviceSN').value.trim();
+    const ip = document.getElementById('deviceIP').value.trim() || null;
+    const classroomId = document.getElementById('deviceClassroom').value || null;
+    
+    if (!sn) {
+        alert('El número de serial es requerido');
+        return;
+    }
+    
+    const submitBtn = elements.deviceForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creando...';
+    
+    try {
+        await fetchAPI('/devices', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                sn, 
+                ip,
+                classroom_id: classroomId ? parseInt(classroomId) : null
+            })
+        });
+        
+        alert('Dispositivo ' + sn + ' creado exitosamente');
+        closeModal(elements.deviceModal);
+        elements.deviceForm.reset();
+        await fetchDevices(); // Recargar lista
+    } catch (error) {
+        alert('Error al crear dispositivo: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Crear Dispositivo';
+    }
+});
+
+// ============= ABRIR MODAL DE EDICIÓN =============
+function openEditDevice(deviceId, deviceSN, currentIP) {
+    document.getElementById('editDeviceId').value = deviceId;
+    document.getElementById('editDeviceSN').value = deviceSN;
+    document.getElementById('editDeviceIP').value = currentIP;
+    openModal(elements.editDeviceModal);
+}
+
+// ============= EDITAR IP DEL DISPOSITIVO =============
+elements.editDeviceForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const deviceId = document.getElementById('editDeviceId').value;
+    const ip = document.getElementById('editDeviceIP').value.trim() || null;
+    
+    const submitBtn = elements.editDeviceForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Actualizando...';
+    
+    try {
+        await fetchAPI('/devices/' + deviceId, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ip })
+        });
+        
+        alert('IP actualizada exitosamente');
+        closeModal(elements.editDeviceModal);
+        elements.editDeviceForm.reset();
+        await fetchDevices(); // Recargar lista
+    } catch (error) {
+        alert('Error al actualizar IP: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Actualizar IP';
+    }
+});
+
+// ============= CREAR PERSONA =============
+elements.personForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = parseInt(document.getElementById('personID').value);
+    const name = document.getElementById('personName').value.trim();
+    const roll_id = parseInt(document.getElementById('personRole').value);
+    
+    if (!id || !name) {
+        alert('ID y nombre son requeridos');
+        return;
+    }
+    
+    const submitBtn = elements.personForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creando...';
+    
+    try {
+        await fetchAPI('/persons', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id, name, roll_id })
+        });
+        
+        alert('Persona ' + name + ' creada exitosamente con ID ' + id);
+        closeModal(elements.personModal);
+        elements.personForm.reset();
+        await fetchPersons(); // Recargar lista
+    } catch (error) {
+        alert('Error al crear persona: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Crear Persona';
+    }
+});
+
+// ============= CREAR COMPANY =============
+elements.companyForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('companyName').value.trim();
+    const code = document.getElementById('companyCode').value.trim() || null;
+    const address = document.getElementById('companyAddress').value.trim() || null;
+    const phone = document.getElementById('companyPhone').value.trim() || null;
+    
+    if (!name) {
+        alert('El nombre del centro/empresa es requerido');
+        return;
+    }
+    
+    const submitBtn = elements.companyForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creando...';
+    
+    try {
+        await fetchAPI('/companies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, code, address, phone })
+        });
+        
+        alert('Centro/Empresa "' + name + '" creado exitosamente');
+        closeModal(elements.companyModal);
+        elements.companyForm.reset();
+        await fetchCompanies();
+    } catch (error) {
+        alert('Error al crear centro/empresa: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Crear Centro';
+    }
+});
+
+// ============= CREAR BUILDING =============
+elements.buildingForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const company_id = parseInt(document.getElementById('buildingCompany').value);
+    const name = document.getElementById('buildingName').value.trim();
+    const code = document.getElementById('buildingCode').value.trim() || null;
+    const floor_count = document.getElementById('buildingFloors').value 
+        ? parseInt(document.getElementById('buildingFloors').value) 
+        : null;
+    
+    if (!company_id || !name) {
+        alert('Centro/Empresa y nombre del edificio son requeridos');
+        return;
+    }
+    
+    const submitBtn = elements.buildingForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creando...';
+    
+    try {
+        await fetchAPI('/buildings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company_id, name, code, floor_count })
+        });
+        
+        alert('Edificio "' + name + '" creado exitosamente');
+        closeModal(elements.buildingModal);
+        elements.buildingForm.reset();
+        await fetchBuildings();
+    } catch (error) {
+        alert('Error al crear edificio: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Crear Edificio';
+    }
+});
+
+// ============= CREAR CLASSROOM =============
+elements.classroomForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const building_id = parseInt(document.getElementById('classroomBuilding').value);
+    const name = document.getElementById('classroomName').value.trim();
+    const code = document.getElementById('classroomCode').value.trim() || null;
+    const floor = document.getElementById('classroomFloor').value 
+        ? parseInt(document.getElementById('classroomFloor').value) 
+        : null;
+    const capacity = document.getElementById('classroomCapacity').value 
+        ? parseInt(document.getElementById('classroomCapacity').value) 
+        : null;
+    
+    if (!building_id || !name) {
+        alert('Edificio y nombre del aula son requeridos');
+        return;
+    }
+    
+    const submitBtn = elements.classroomForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creando...';
+    
+    try {
+        await fetchAPI('/classrooms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ building_id, name, code, floor, capacity })
+        });
+        
+        alert('Aula "' + name + '" creada exitosamente');
+        closeModal(elements.classroomModal);
+        elements.classroomForm.reset();
+        await fetchClassrooms();
+    } catch (error) {
+        alert('Error al crear aula: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Crear Aula';
+    }
+});
+
+// ============= CARGA MASIVA CSV =============
+// Variable para almacenar los dispositivos parseados
+let bulkDevicesData = [];
+
+// Función para parsear CSV
+function parseCSV(csvText) {
+    const lines = csvText.trim().split('\n');
+    if (lines.length < 2) {
+        throw new Error('El archivo CSV debe tener al menos una fila de encabezados y una fila de datos');
+    }
+    
+    const headers = lines[0].split(',').map(h => h.trim());
+    const devices = [];
+    
+    // Verificar que tenga la columna 'sn'
+    if (!headers.includes('sn')) {
+        throw new Error('El archivo CSV debe tener una columna "sn" (serial number)');
+    }
+    
+    for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const device = {};
+        
+        headers.forEach((header, index) => {
+            const value = values[index];
+            if (header === 'sn') {
+                device.sn = value;
+            } else if (header === 'ip') {
+                device.ip = value || null;
+            } else if (header === 'classroom_id') {
+                device.classroom_id = value ? parseInt(value) : null;
+            }
+        });
+        
+        if (device.sn) {
+            devices.push(device);
+        }
+    }
+    
+    return devices;
+}
+
+// Event listener para selección de archivo
+elements.csvFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+        const text = await file.text();
+        bulkDevicesData = parseCSV(text);
+        
+        // Mostrar preview
+        elements.previewCount.textContent = `${bulkDevicesData.length} dispositivos encontrados`;
+        
+        // Crear tabla de preview
+        const previewHTML = `
+            <table style="width: 100%; font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>IP</th>
+                        <th>Aula ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${bulkDevicesData.slice(0, 10).map(d => `
+                        <tr>
+                            <td>${d.sn}</td>
+                            <td>${d.ip || 'N/A'}</td>
+                            <td>${d.classroom_id || 'N/A'}</td>
+                        </tr>
+                    `).join('')}
+                    ${bulkDevicesData.length > 10 ? `
+                        <tr>
+                            <td colspan="3" style="text-align: center; font-style: italic;">
+                                ... y ${bulkDevicesData.length - 10} más
+                            </td>
+                        </tr>
+                    ` : ''}
+                </tbody>
+            </table>
+        `;
+        
+        elements.previewTable.innerHTML = previewHTML;
+        elements.uploadPreview.style.display = 'block';
+        elements.submitBulkUpload.disabled = false;
+    } catch (error) {
+        alert('Error al leer el archivo: ' + error.message);
+        elements.uploadPreview.style.display = 'none';
+        elements.submitBulkUpload.disabled = true;
+    }
+});
+
+// Event listener para subir dispositivos
+elements.submitBulkUpload.addEventListener('click', async () => {
+    if (bulkDevicesData.length === 0) {
+        alert('No hay dispositivos para subir');
+        return;
+    }
+    
+    const confirmMsg = `¿Está seguro de que desea crear ${bulkDevicesData.length} dispositivos?`;
+    if (!confirm(confirmMsg)) return;
+    
+    elements.submitBulkUpload.disabled = true;
+    elements.submitBulkUpload.textContent = 'Subiendo...';
+    
+    try {
+        const response = await fetchAPI('/devices/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ devices: bulkDevicesData })
+        });
+        
+        alert(`${response.count} dispositivos creados exitosamente`);
+        closeModal(elements.bulkUploadModal);
+        
+        // Reset
+        elements.csvFileInput.value = '';
+        elements.uploadPreview.style.display = 'none';
+        bulkDevicesData = [];
+        
+        await fetchDevices(); // Recargar lista
+    } catch (error) {
+        alert('Error al crear dispositivos: ' + error.message);
+    } finally {
+        elements.submitBulkUpload.disabled = false;
+        elements.submitBulkUpload.textContent = 'Subir Dispositivos';
+    }
+});
+
+// Iniciar actualización automática
+function startAutoRefresh() {
+    // Cargar datos iniciales
+    refreshAll();
+    
+    // Configurar actualización automática
+    autoRefreshInterval = setInterval(refreshAll, REFRESH_INTERVAL);
+}
+
+// Detener actualización automática (útil para debugging)
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+}
+
+// Manejar visibilidad de la página
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopAutoRefresh();
+    } else {
+        startAutoRefresh();
+    }
+});
+
+// Iniciar la aplicación
+console.log('Iniciando aplicación de monitoreo...');
+console.log(`Servidor: ${SERVER_URL}`);
+console.log(`Actualización automática cada ${REFRESH_INTERVAL/1000} segundos`);
+
+// Inicializar navegación
+initNavigation();
+
+// Iniciar auto-refresh
+startAutoRefresh();

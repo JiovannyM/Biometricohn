@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema Biométrico MEGATK</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(255, 255, 255, 0.03) 2px,
+                    rgba(255, 255, 255, 0.03) 4px
+                ),
+                linear-gradient(180deg, 
+                    #b8b8b8 0%,
+                    #d5d5d5 5%,
+                    #ebebeb 15%,
+                    #ffffff 25%,
+                    #f8f8f8 35%,
+                    #ffffff 45%,
+                    #fafafa 50%,
+                    #ffffff 55%,
+                    #f5f5f5 65%,
+                    #e8e8e8 75%,
+                    #d8d8d8 85%,
+                    #c8c8c8 95%,
+                    #b5b5b5 100%
+                );
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 60%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 
+                0 20px 60px rgba(15, 27, 111, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.8);
+            overflow: hidden;
+            border: 1px solid rgba(200, 200, 200, 0.3);
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, #0F1B6F 0%, #3480BA 100%);
+            color: white;
+            padding: 40px 30px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { transform: translate(-25%, -25%) scale(1); }
+            50% { transform: translate(-25%, -25%) scale(1.1); }
+        }
+        
+        .logo-container {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 20px;
+        }
+        
+        .logo-megatk {
+            width: 200px;
+            height: auto;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+            animation: fadeInDown 0.6s ease-out;
+            max-width: 100%;
+        }
+        
+        #logoFallback {
+            animation: fadeInDown 0.6s ease-out;
+        }
+        
+        #logoFallback .logo-text {
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            letter-spacing: 3px;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .login-header p {
+            margin: 8px 0 0;
+            font-size: 14px;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .login-body {
+            padding: 40px 35px;
+            background: white;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #0F1B6F;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .form-control {
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white !important;
+            color: #000 !important;
+        }
+        
+        .form-control:focus {
+            border-color: #3480BA;
+            box-shadow: 0 0 0 0.2rem rgba(52, 128, 186, 0.15);
+            outline: none;
+            background: white !important;
+        }
+        
+        .form-control::placeholder {
+            color: #999;
+            opacity: 1;
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #0F1B6F 0%, #3480BA 100%);
+            border: none;
+            padding: 14px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(15, 27, 111, 0.3);
+        }
+        
+        .btn-login:hover::before {
+            left: 100%;
+        }
+        
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .alert-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .footer-text {
+            text-align: center;
+            margin-top: 20px;
+            color: #0F1B6F;
+            font-size: 13px;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-container">
+                    <img src="utils/icon/Megatk%20store.png" alt="MEGATK" class="logo-megatk" 
+                         onerror="console.error('Logo no encontrado:', this.src); this.style.display='none'; document.getElementById('logoFallback').style.display='block';">
+                    <div id="logoFallback" style="display: none;">
+                        <div class="logo-text">MEGATK</div>
+                    </div>
+                </div>
+                <h2>Sistema de Control Biométrico</h2>
+                <p>Iniciar Sesión</p>
+            </div>
+            <div class="login-body">
+                <div id="alertContainer"></div>
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Usuario</label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="username" 
+                            name="username" 
+                            placeholder="Ingrese su usuario"
+                            required
+                            autocomplete="username">
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input 
+                            type="password" 
+                            class="form-control" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Ingrese su contraseña"
+                            required
+                            autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-login w-100" id="loginBtn">
+                        <span id="loginText">Iniciar Sesión</span>
+                        <span id="loginSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="footer-text">
+            <strong>MEGATK</strong> © <span id="currentYear"></span> - Sistema de Control de Acceso
+        </div>
+    </div>
+
+    <script type="module">
+        // Establecer año actual
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        import { API_URL } from './config.js';
+
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginText = document.getElementById('loginText');
+        const loginSpinner = document.getElementById('loginSpinner');
+        const alertContainer = document.getElementById('alertContainer');
+
+        // Verificar carga del logo
+        const logoImg = document.querySelector('.logo-megatk');
+        if (logoImg) {
+            logoImg.onload = () => console.log('Logo MEGATK cargado correctamente');
+            logoImg.onerror = () => console.error('Error cargando logo MEGATK. Ruta:', logoImg.src);
+        }
+
+        // Mostrar alerta
+        function showAlert(message, type = 'danger') {
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+
+        // Manejar login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Deshabilitar botón
+            loginBtn.disabled = true;
+            loginText.classList.add('d-none');
+            loginSpinner.classList.remove('d-none');
+            
+            try {
+                // Crear FormData para OAuth2
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('password', password);
+
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Guardar token
+                    localStorage.setItem('access_token', data.access_token);
+                    
+                    // Obtener información del usuario
+                    const userResponse = await fetch(`${API_URL}/auth/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${data.access_token}`
+                        }
+                    });
+                    
+                    const userData = await userResponse.json();
+                    localStorage.setItem('user_info', JSON.stringify(userData));
+                    
+                    showAlert('¡Login exitoso! Redirigiendo...', 'success');
+                    
+                    // Redirigir según el rol
+                    setTimeout(() => {
+                        if (userData.role === 'super_admin' || userData.role === 'admin') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'index.html';
+                        }
+                    }, 1000);
+                } else {
+                    showAlert(data.detail || 'Usuario o contraseña incorrectos');
+                }
+            } catch (error) {
+                console.error('Error de login:', error);
+                showAlert('Error de conexión con el servidor');
+            } finally {
+                // Rehabilitar botón
+                loginBtn.disabled = false;
+                loginText.classList.remove('d-none');
+                loginSpinner.classList.add('d-none');
+            }
+        });
+
+        // Verificar si ya está logueado
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            // Verificar si el token es válido
+            fetch(`${API_URL}/auth/me`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = 'index.html';
+                }
+            })
+            .catch(() => {
+                // Token inválido, limpiar
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('user_info');
+            });
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
