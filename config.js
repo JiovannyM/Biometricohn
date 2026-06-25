@@ -1,6 +1,6 @@
-// Configuración del servidor
-export const SERVER_URL = 'http://13.58.64.227:7792';
-export const API_URL = `${SERVER_URL}/api`;
+// Configuración de API para producción detrás de Nginx (mismo dominio)
+export const SERVER_URL = '';
+export const API_URL = '/api';
 export const REFRESH_INTERVAL = 5000; // 5 segundos
 
 // Estado global de la aplicación
