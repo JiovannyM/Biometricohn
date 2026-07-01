@@ -22,21 +22,10 @@ function resumeAutoRefreshFromManualAction(source) {
 
 // Actualizar todos los datos
 async function refreshAll() {
-    // Si hay filtros activos, pausar la actualización de registros
+    // Si hay filtros activos, pausar la actualización automática completa
     if (state.autoRefreshPaused) {
-        console.log('[Auto-Refresh] Pausado - Filtros activos. Solo actualizando dispositivos y usuarios.');
-        // Solo actualizar dispositivos y usuarios, NO registros
-        await Promise.all([
-            fetchDevices(),
-            fetchCompanies(),
-            fetchBuildings(),
-            fetchClassrooms()
-        ]).catch(error => {
-            console.error('[Auto-Refresh] Error actualizando datos:', error);
-        });
-        await fetchPersons().catch(error => console.error('[Auto-Refresh] Error en personas:', error));
-        updateCommandsData(state.devices, state.persons);
-        return; // No actualizar registros
+        console.log('[Auto-Refresh] Pausado - Filtros activos. Sincronización automática detenida.');
+        return;
     }
     
     // Actualización completa cuando no hay filtros activos

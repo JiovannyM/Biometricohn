@@ -761,7 +761,7 @@ async function renderFilteredRecords(filteredRecords) {
 
 // ==================== FILTER INDICATOR ====================
 
-function showFilterIndicator() {
+export function showFilterIndicator() {
     // Buscar o crear el indicador
     let indicator = document.getElementById('filterActiveIndicator');
     
@@ -829,7 +829,7 @@ function showFilterIndicator() {
     indicator.style.display = 'flex';
 }
 
-function hideFilterIndicator() {
+export function hideFilterIndicator() {
     const indicator = document.getElementById('filterActiveIndicator');
     if (indicator) {
         indicator.style.animation = 'slideOutRight 0.3s ease-out';
@@ -1052,6 +1052,17 @@ function initBuildingFilters() {
 function applyBuildingFilters() {
     const buildingsTableBody = document.getElementById('buildingsTableBody');
     if (!buildingsTableBody) return;
+
+    const hasActiveFilters = !!(buildingFilters.companyId || buildingFilters.searchTerm);
+    if (hasActiveFilters) {
+        state.autoRefreshPaused = true;
+        state.filtersActive = true;
+        showFilterIndicator();
+    } else {
+        state.autoRefreshPaused = false;
+        state.filtersActive = false;
+        hideFilterIndicator();
+    }
     
     let filteredBuildings = state.buildings;
     
@@ -1137,6 +1148,17 @@ function initClassroomLocationFilters() {
 function applyClassroomLocationFilters() {
     const classroomsTableBody = document.getElementById('classroomsTableBody');
     if (!classroomsTableBody) return;
+
+    const hasActiveFilters = !!(classroomFilters.companyId || classroomFilters.buildingId || classroomFilters.searchTerm);
+    if (hasActiveFilters) {
+        state.autoRefreshPaused = true;
+        state.filtersActive = true;
+        showFilterIndicator();
+    } else {
+        state.autoRefreshPaused = false;
+        state.filtersActive = false;
+        hideFilterIndicator();
+    }
     
     let filteredClassrooms = state.classrooms;
     

@@ -5,6 +5,7 @@
 
 import { API_URL, state } from '../config.js';
 import { fetchAPI } from '../api.js';
+import { showFilterIndicator, hideFilterIndicator } from '../utils/filters.js';
 
 // Estado local del componente
 let devices = [];
@@ -20,6 +21,11 @@ let filters = {
 };
 
 function setCommandFilterPauseState() {
+    // Evitar que este componente sobrescriba el estado global cuando no está activo.
+    if (state.currentView !== 'comandos') {
+        return;
+    }
+
     const hasActiveFilters = !!(
         filters.searchText ||
         filters.companyId ||
@@ -31,19 +37,11 @@ function setCommandFilterPauseState() {
     if (hasActiveFilters) {
         state.autoRefreshPaused = true;
         state.filtersActive = true;
-
-        const indicator = document.getElementById('filterActiveIndicator');
-        if (indicator) {
-            indicator.style.display = 'flex';
-        }
+        showFilterIndicator();
     } else {
         state.autoRefreshPaused = false;
         state.filtersActive = false;
-
-        const indicator = document.getElementById('filterActiveIndicator');
-        if (indicator) {
-            indicator.style.display = 'none';
-        }
+        hideFilterIndicator();
     }
 }
 
@@ -613,10 +611,7 @@ function clearFilters() {
     // Reanudar actualización automática al limpiar filtros
     state.autoRefreshPaused = false;
     state.filtersActive = false;
-    const indicator = document.getElementById('filterActiveIndicator');
-    if (indicator) {
-        indicator.style.display = 'none';
-    }
+    hideFilterIndicator();
     
     // Refrescar selectores
     populateDeviceSelectors();
