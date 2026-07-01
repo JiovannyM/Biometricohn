@@ -78,6 +78,7 @@ export function initModalEvents() {
         if (event.target === elements.buildingModal) closeModal(elements.buildingModal);
         if (event.target === elements.classroomModal) closeModal(elements.classroomModal);
         if (event.target === elements.bulkUploadModal) closeModal(elements.bulkUploadModal);
+        if (event.target === elements.personLocationsModal) closeModal(elements.personLocationsModal);
         
         // Modales de edición
         const editPersonModal = document.getElementById('editPersonModal');
@@ -640,6 +641,13 @@ function initBulkUpload() {
 // ============= EDITAR PERSONA =============
 function initEditPersonButton() {
     elements.personsBody.addEventListener('click', (e) => {
+        const locationsBtn = e.target.closest('.btn-view-locations');
+        if (locationsBtn) {
+            const personId = locationsBtn.dataset.personId;
+            showPersonLocations(personId);
+            return;
+        }
+
         const delBtn = e.target.closest('.btn-delete-person');
         if (delBtn) {
             const personId = delBtn.dataset.personId;
@@ -696,6 +704,69 @@ function initEditPersonButton() {
     const cancelEditPerson = document.getElementById('cancelEditPerson');
     if (closeEditPersonModal) closeEditPersonModal.addEventListener('click', () => closeModal(document.getElementById('editPersonModal')));
     if (cancelEditPerson) cancelEditPerson.addEventListener('click', () => closeModal(document.getElementById('editPersonModal')));
+
+    // Eventos modal de ubicaciones de usuario
+    if (elements.closePersonLocationsModal) {
+        elements.closePersonLocationsModal.addEventListener('click', () => closeModal(elements.personLocationsModal));
+    }
+    if (elements.closePersonLocationsBtn) {
+        elements.closePersonLocationsBtn.addEventListener('click', () => closeModal(elements.personLocationsModal));
+    }
+}
+
+async function showPersonLocations(personId) {
+    const modal = elements.personLocationsModal;
+    const title = document.getElementById('personLocationsTitle');
+    const body = document.getElementById('personLocationsBody');
+
+    if (!modal || !title || !body) {
+        alert('Modal de ubicaciones no disponible');
+        return;
+    }
+
+    const person = state.persons.find(p => String(p.id) === String(personId));
+    const personName = person ? person.name : `ID ${personId}`;
+
+    title.textContent = `Ubicaciones de ${personName} (${personId})`;
+    body.innerHTML = '<p class="loading">Cargando ubicaciones...</p>';
+    openModal(modal);
+
+    try {
+        const locations = await fetchAPI(`/persons/${personId}/locations`);
+        if (!locations || locations.length === 0) {
+            body.innerHTML = '<p class="empty">Este usuario no tiene dispositivos asignados actualmente.</p>';
+            return;
+        }
+
+        body.innerHTML = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Dispositivo</th>
+                        <th>IP</th>
+                        <th>Centro</th>
+                        <th>Edificio</th>
+                        <th>Aula</th>
+                        <th>Asignado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${locations.map(loc => `
+                        <tr>
+                            <td><strong>${loc.device_sn || 'N/A'}</strong></td>
+                            <td>${loc.device_ip || 'N/A'}</td>
+                            <td>${loc.company_name || 'N/A'}</td>
+                            <td>${loc.building_name || 'N/A'}</td>
+                            <td>${loc.classroom_name || 'N/A'}</td>
+                            <td>${new Date(loc.assigned_at).toLocaleString('es-ES')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        body.innerHTML = `<p class="empty">Error cargando ubicaciones: ${error.message}</p>`;
+    }
 }
 
 // ============= EDITAR CENTRO =============

@@ -48,6 +48,7 @@ export const elements = {
     deviceModal: document.getElementById('deviceModal'),
     personModal: document.getElementById('personModal'),
     editDeviceModal: document.getElementById('editDeviceModal'),
+    personLocationsModal: document.getElementById('personLocationsModal'),
     
     // Formularios - Organization
     companyForm: document.getElementById('companyForm'),
@@ -69,6 +70,7 @@ export const elements = {
     closeDeviceModal: document.getElementById('closeDeviceModal'),
     closePersonModal: document.getElementById('closePersonModal'),
     closeEditDeviceModal: document.getElementById('closeEditDeviceModal'),
+    closePersonLocationsModal: document.getElementById('closePersonLocationsModal'),
     
     // Cancel buttons - Organization
     cancelCompany: document.getElementById('cancelCompany'),
@@ -80,6 +82,7 @@ export const elements = {
     cancelDevice: document.getElementById('cancelDevice'),
     cancelPerson: document.getElementById('cancelPerson'),
     cancelEditDevice: document.getElementById('cancelEditDevice'),
+    closePersonLocationsBtn: document.getElementById('closePersonLocationsBtn'),
     
     // Bulk upload elements
     csvFileInput: document.getElementById('csvFileInput'),
