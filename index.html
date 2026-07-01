@@ -85,6 +85,7 @@
                         <button id="addCompanyBtn" class="btn-add"> Agregar Centro/Empresa</button>
                         <button id="addBuildingBtn" class="btn-add"> Agregar Edificio</button>
                         <button id="addClassroomBtn" class="btn-add"> Agregar Aula</button>
+                        <button id="refreshLocations" class="btn-refresh"> Actualizar</button>
                     </div>
                 </div>
                 <div class="organization-summary">
@@ -117,6 +118,9 @@
                         <div class="filter-group">
                             <label for="searchCompany"> Buscar:</label>
                             <input type="text" id="searchCompany" class="filter-input" placeholder="Buscar por nombre...">
+                        </div>
+                        <div class="filter-group">
+                            <button id="clearCompanyFilters" class="btn-clear-filter"> Limpiar Filtros</button>
                         </div>
                     </div>
                     
@@ -445,6 +449,9 @@
             <div class="card">
                 <div class="card-header">
                     <h2>Comandos Remotos</h2>
+                    <div>
+                        <button id="refreshCommands" class="btn-refresh"> Actualizar</button>
+                    </div>
                 </div>
 
                 <!-- Filtros de Dispositivos -->

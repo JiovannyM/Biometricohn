@@ -921,6 +921,24 @@ function initSearchInputs() {
 }
 
 function initClearFilters() {
+    // Limpiar filtros de centros
+    const clearCompany = document.getElementById('clearCompanyFilters');
+    if (clearCompany) {
+        clearCompany.addEventListener('click', () => {
+            companySearchTerm = '';
+
+            const searchCompany = document.getElementById('searchCompany');
+            if (searchCompany) searchCompany.value = '';
+
+            // Reactivar actualización automática
+            state.autoRefreshPaused = false;
+            state.filtersActive = false;
+            hideFilterIndicator();
+
+            applyCompanySearch();
+        });
+    }
+
     // Limpiar filtros de edificios
     const clearBuilding = document.getElementById('clearBuildingFilters');
     if (clearBuilding) {
@@ -933,6 +951,11 @@ function initClearFilters() {
             
             if (filterCompany) filterCompany.value = '';
             if (searchBuilding) searchBuilding.value = '';
+
+            // Reactivar actualización automática
+            state.autoRefreshPaused = false;
+            state.filtersActive = false;
+            hideFilterIndicator();
             
             applyBuildingFilters();
         });
@@ -957,6 +980,11 @@ function initClearFilters() {
                 filterBuilding.innerHTML = '<option value="">Seleccione primero un centro</option>';
             }
             if (searchClassroom) searchClassroom.value = '';
+
+            // Reactivar actualización automática
+            state.autoRefreshPaused = false;
+            state.filtersActive = false;
+            hideFilterIndicator();
             
             applyClassroomLocationFilters();
         });
@@ -966,6 +994,17 @@ function initClearFilters() {
 function applyCompanySearch() {
     const companiesTableBody = document.getElementById('companiesTableBody');
     if (!companiesTableBody) return;
+
+    const hasActiveFilters = !!companySearchTerm;
+    if (hasActiveFilters) {
+        state.autoRefreshPaused = true;
+        state.filtersActive = true;
+        showFilterIndicator();
+    } else {
+        state.autoRefreshPaused = false;
+        state.filtersActive = false;
+        hideFilterIndicator();
+    }
     
     let filteredCompanies = state.companies;
     

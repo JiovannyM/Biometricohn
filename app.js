@@ -10,6 +10,16 @@ import { fetchCompanies, fetchBuildings, fetchClassrooms } from './components/or
 import { initCommands, updateCommandsData, updateFilters } from './components/commands.js';
 import { initDeviceFilters, initUserFilters, initRecordFilters, initLocationFilters } from './utils/filters.js';
 
+function resumeAutoRefreshFromManualAction(source) {
+    if (state.autoRefreshPaused || state.filtersActive) {
+        console.log(`[Refresh] Reanudando actualización automática desde ${source}`);
+        state.autoRefreshPaused = false;
+        state.filtersActive = false;
+        const indicator = document.getElementById('filterActiveIndicator');
+        if (indicator) indicator.style.display = 'none';
+    }
+}
+
 // Actualizar todos los datos
 async function refreshAll() {
     // Si hay filtros activos, pausar la actualización de registros
@@ -54,44 +64,44 @@ async function refreshAll() {
 // Event listeners para botones de refresh
 function initRefreshButtons() {
     elements.refreshDevices.addEventListener('click', () => {
-        // Reanudar actualización automática al presionar actualizar
-        if (state.autoRefreshPaused || state.filtersActive) {
-            console.log('[Refresh] Reanudando actualización automática desde botón de dispositivos');
-            state.autoRefreshPaused = false;
-            state.filtersActive = false;
-            // Ocultar indicador
-            const indicator = document.getElementById('filterActiveIndicator');
-            if (indicator) indicator.style.display = 'none';
-        }
+        resumeAutoRefreshFromManualAction('botón de dispositivos');
         fetchDevices();
     });
     
     elements.refreshPersons.addEventListener('click', () => {
-        // Reanudar actualización automática al presionar actualizar
-        if (state.autoRefreshPaused || state.filtersActive) {
-            console.log('[Refresh] Reanudando actualización automática desde botón de usuarios');
-            state.autoRefreshPaused = false;
-            state.filtersActive = false;
-            // Ocultar indicador
-            const indicator = document.getElementById('filterActiveIndicator');
-            if (indicator) indicator.style.display = 'none';
-        }
+        resumeAutoRefreshFromManualAction('botón de usuarios');
         fetchPersons();
     });
     
     elements.refreshRecords.addEventListener('click', async () => {
-        // Reanudar actualización automática al presionar actualizar
-        if (state.autoRefreshPaused || state.filtersActive) {
-            console.log('[Refresh] Reanudando actualización automática desde botón de registros');
-            state.autoRefreshPaused = false;
-            state.filtersActive = false;
-            // Ocultar indicador
-            const indicator = document.getElementById('filterActiveIndicator');
-            if (indicator) indicator.style.display = 'none';
-        }
+        resumeAutoRefreshFromManualAction('botón de registros');
         // Recargar usuarios primero, luego registros
         await fetchPersons();
         await fetchRecords();
+    });
+
+    const refreshLocations = document.getElementById('refreshLocations');
+    refreshLocations?.addEventListener('click', async () => {
+        resumeAutoRefreshFromManualAction('botón de ubicaciones');
+        await Promise.all([
+            fetchCompanies(),
+            fetchBuildings(),
+            fetchClassrooms()
+        ]);
+    });
+
+    const refreshCommands = document.getElementById('refreshCommands');
+    refreshCommands?.addEventListener('click', async () => {
+        resumeAutoRefreshFromManualAction('botón de comandos');
+        await Promise.all([
+            fetchDevices(),
+            fetchPersons(),
+            fetchCompanies(),
+            fetchBuildings(),
+            fetchClassrooms()
+        ]);
+        updateFilters();
+        updateCommandsData(state.devices, state.persons);
     });
 }
 
