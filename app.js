@@ -8,20 +8,58 @@ import { fetchPersons } from './components/persons.js';
 import { fetchRecords } from './components/records.js';
 import { fetchCompanies, fetchBuildings, fetchClassrooms } from './components/organization.js';
 import { initCommands, updateCommandsData, updateFilters } from './components/commands.js';
-import { initDeviceFilters, initUserFilters, initRecordFilters, initLocationFilters } from './utils/filters.js';
+import { initDeviceFilters, initUserFilters, initRecordFilters, initLocationFilters, showFilterIndicator, hideFilterIndicator } from './utils/filters.js';
+
+function hasActiveLocationFiltersFromDOM() {
+    if (state.currentView !== 'ubicaciones') return false;
+
+    const searchCompany = document.getElementById('searchCompany')?.value?.trim();
+    const searchBuilding = document.getElementById('searchBuilding')?.value?.trim();
+    const searchClassroom = document.getElementById('searchClassroom')?.value?.trim();
+    const filterBuildingCompany = document.getElementById('filterBuildingCompany')?.value;
+    const filterClassroomCompany = document.getElementById('filterClassroomCompany')?.value;
+    const filterClassroomBuilding = document.getElementById('filterClassroomBuilding')?.value;
+
+    return !!(
+        searchCompany ||
+        searchBuilding ||
+        searchClassroom ||
+        filterBuildingCompany ||
+        filterClassroomCompany ||
+        filterClassroomBuilding
+    );
+}
+
+function hasActiveCommandFiltersFromDOM() {
+    if (state.currentView !== 'comandos') return false;
+
+    const searchText = document.getElementById('filterDeviceSearch')?.value?.trim();
+    const companyId = document.getElementById('filterCommandCompany')?.value;
+    const buildingId = document.getElementById('filterCommandBuilding')?.value;
+    const classroomId = document.getElementById('filterCommandClassroom')?.value;
+    const onlyConnected = document.getElementById('filterOnlyConnected')?.checked;
+
+    return !!(searchText || companyId || buildingId || classroomId || onlyConnected === false);
+}
 
 function resumeAutoRefreshFromManualAction(source) {
     if (state.autoRefreshPaused || state.filtersActive) {
         console.log(`[Refresh] Reanudando actualización automática desde ${source}`);
         state.autoRefreshPaused = false;
         state.filtersActive = false;
-        const indicator = document.getElementById('filterActiveIndicator');
-        if (indicator) indicator.style.display = 'none';
+        hideFilterIndicator();
     }
 }
 
 // Actualizar todos los datos
 async function refreshAll() {
+    const hasDomFilters = hasActiveLocationFiltersFromDOM() || hasActiveCommandFiltersFromDOM();
+    if (hasDomFilters) {
+        state.autoRefreshPaused = true;
+        state.filtersActive = true;
+        showFilterIndicator();
+    }
+
     // Si hay filtros activos, pausar la actualización automática completa
     if (state.autoRefreshPaused) {
         console.log('[Auto-Refresh] Pausado - Filtros activos. Sincronización automática detenida.');
