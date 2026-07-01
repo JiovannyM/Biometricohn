@@ -467,7 +467,7 @@
                         <td>${user.last_login ? new Date(user.last_login).toLocaleString() : 'Nunca'}</td>
                         <td class="table-actions">
                             ${isSuperAdmin ? `
-                                <button class="btn btn-sm btn-warning" onclick="editUser(${user.id})">Editar</button>
+                                <button class="btn btn-sm btn-primary" onclick="editUser(${user.id})">Editar</button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id}, '${user.username}')">Eliminar</button>
                             ` : '<span class="text-muted">🔒</span>'}
                         </td>
