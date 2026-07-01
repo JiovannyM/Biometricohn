@@ -294,7 +294,8 @@ function updateOrganizationUI() {
 }
 
 function reapplyLocationFiltersIfActive() {
-    if (state.currentView !== 'ubicaciones') {
+    const activeView = document.querySelector('.view-section.active')?.id?.replace('view-', '') || state.currentView;
+    if (activeView !== 'ubicaciones') {
         return;
     }
 

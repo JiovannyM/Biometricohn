@@ -10,8 +10,17 @@ import { fetchCompanies, fetchBuildings, fetchClassrooms } from './components/or
 import { initCommands, updateCommandsData, updateFilters } from './components/commands.js';
 import { initDeviceFilters, initUserFilters, initRecordFilters, initLocationFilters, showFilterIndicator, hideFilterIndicator } from './utils/filters.js';
 
+function getActiveViewNameFromDOM() {
+    const activeSection = document.querySelector('.view-section.active');
+    if (!activeSection?.id) return state.currentView;
+
+    const viewName = activeSection.id.replace('view-', '');
+    return viewName || state.currentView;
+}
+
 function hasActiveLocationFiltersFromDOM() {
-    if (state.currentView !== 'ubicaciones') return false;
+    const activeView = getActiveViewNameFromDOM();
+    if (activeView !== 'ubicaciones') return false;
 
     const searchCompany = document.getElementById('searchCompany')?.value?.trim();
     const searchBuilding = document.getElementById('searchBuilding')?.value?.trim();
@@ -31,7 +40,8 @@ function hasActiveLocationFiltersFromDOM() {
 }
 
 function hasActiveCommandFiltersFromDOM() {
-    if (state.currentView !== 'comandos') return false;
+    const activeView = getActiveViewNameFromDOM();
+    if (activeView !== 'comandos') return false;
 
     const searchText = document.getElementById('filterDeviceSearch')?.value?.trim();
     const companyId = document.getElementById('filterCommandCompany')?.value;
@@ -53,6 +63,9 @@ function resumeAutoRefreshFromManualAction(source) {
 
 // Actualizar todos los datos
 async function refreshAll() {
+    // Mantener sincronizado el estado con la vista activa real del DOM.
+    state.currentView = getActiveViewNameFromDOM();
+
     const hasDomFilters = hasActiveLocationFiltersFromDOM() || hasActiveCommandFiltersFromDOM();
     if (hasDomFilters) {
         state.autoRefreshPaused = true;
