@@ -287,6 +287,52 @@ function updateOrganizationUI() {
             }).join('');
         }
     }
+
+    // Si hay filtros activos en Gestión de Ubicaciones, reaplicarlos
+    // para evitar que un refresh en vuelo sobrescriba la vista filtrada.
+    reapplyLocationFiltersIfActive();
+}
+
+function reapplyLocationFiltersIfActive() {
+    if (state.currentView !== 'ubicaciones') {
+        return;
+    }
+
+    const searchCompany = document.getElementById('searchCompany');
+    const searchBuilding = document.getElementById('searchBuilding');
+    const filterBuildingCompany = document.getElementById('filterBuildingCompany');
+    const searchClassroom = document.getElementById('searchClassroom');
+    const filterClassroomCompany = document.getElementById('filterClassroomCompany');
+    const filterClassroomBuilding = document.getElementById('filterClassroomBuilding');
+
+    if (searchCompany && searchCompany.value.trim()) {
+        searchCompany.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    if ((filterBuildingCompany && filterBuildingCompany.value) || (searchBuilding && searchBuilding.value.trim())) {
+        if (filterBuildingCompany && filterBuildingCompany.value) {
+            filterBuildingCompany.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (searchBuilding && searchBuilding.value.trim()) {
+            searchBuilding.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
+
+    if (
+        (filterClassroomCompany && filterClassroomCompany.value) ||
+        (filterClassroomBuilding && filterClassroomBuilding.value) ||
+        (searchClassroom && searchClassroom.value.trim())
+    ) {
+        if (filterClassroomCompany && filterClassroomCompany.value) {
+            filterClassroomCompany.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (filterClassroomBuilding && filterClassroomBuilding.value) {
+            filterClassroomBuilding.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (searchClassroom && searchClassroom.value.trim()) {
+            searchClassroom.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
 }
 
 // ==================== SELECTORS CASCADE ====================
