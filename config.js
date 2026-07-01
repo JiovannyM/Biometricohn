@@ -15,6 +15,18 @@ export const state = {
     autoRefreshInterval: null,
     filtersActive: false,
     autoRefreshPaused: false,
+    locationFilters: {
+        companySearchTerm: '',
+        building: {
+            companyId: '',
+            searchTerm: ''
+        },
+        classroom: {
+            companyId: '',
+            buildingId: '',
+            searchTerm: ''
+        }
+    },
     authErrorCount: 0,  // Contador de errores de autenticación
     isLoggingOut: false // Flag para evitar múltiples redirecciones
 };

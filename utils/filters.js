@@ -846,18 +846,16 @@ export function hideFilterIndicator() {
 
 // ==================== LOCATION FILTERS ====================
 
-let buildingFilters = {
-    companyId: '',
-    searchTerm: ''
-};
-
-let classroomFilters = {
-    companyId: '',
-    buildingId: '',
-    searchTerm: ''
-};
-
-let companySearchTerm = '';
+function getLocationFilters() {
+    if (!state.locationFilters) {
+        state.locationFilters = {
+            companySearchTerm: '',
+            building: { companyId: '', searchTerm: '' },
+            classroom: { companyId: '', buildingId: '', searchTerm: '' }
+        };
+    }
+    return state.locationFilters;
+}
 
 export function initLocationFilters() {
     initNavigationButtons();
@@ -900,8 +898,9 @@ function initSearchInputs() {
     const searchCompany = document.getElementById('searchCompany');
     if (searchCompany) {
         searchCompany.addEventListener('input', (e) => {
-            companySearchTerm = e.target.value.toLowerCase();
-            if (companySearchTerm) {
+            const filters = getLocationFilters();
+            filters.companySearchTerm = e.target.value.toLowerCase();
+            if (filters.companySearchTerm) {
                 state.autoRefreshPaused = true;
                 state.filtersActive = true;
                 showFilterIndicator();
@@ -917,8 +916,9 @@ function initSearchInputs() {
     const searchBuilding = document.getElementById('searchBuilding');
     if (searchBuilding) {
         searchBuilding.addEventListener('input', (e) => {
-            buildingFilters.searchTerm = e.target.value.toLowerCase();
-            if (buildingFilters.companyId || buildingFilters.searchTerm) {
+            const filters = getLocationFilters();
+            filters.building.searchTerm = e.target.value.toLowerCase();
+            if (filters.building.companyId || filters.building.searchTerm) {
                 state.autoRefreshPaused = true;
                 state.filtersActive = true;
                 showFilterIndicator();
@@ -931,8 +931,9 @@ function initSearchInputs() {
     const searchClassroom = document.getElementById('searchClassroom');
     if (searchClassroom) {
         searchClassroom.addEventListener('input', (e) => {
-            classroomFilters.searchTerm = e.target.value.toLowerCase();
-            if (classroomFilters.companyId || classroomFilters.buildingId || classroomFilters.searchTerm) {
+            const filters = getLocationFilters();
+            filters.classroom.searchTerm = e.target.value.toLowerCase();
+            if (filters.classroom.companyId || filters.classroom.buildingId || filters.classroom.searchTerm) {
                 state.autoRefreshPaused = true;
                 state.filtersActive = true;
                 showFilterIndicator();
@@ -947,7 +948,8 @@ function initClearFilters() {
     const clearCompany = document.getElementById('clearCompanyFilters');
     if (clearCompany) {
         clearCompany.addEventListener('click', () => {
-            companySearchTerm = '';
+            const filters = getLocationFilters();
+            filters.companySearchTerm = '';
 
             const searchCompany = document.getElementById('searchCompany');
             if (searchCompany) searchCompany.value = '';
@@ -965,8 +967,9 @@ function initClearFilters() {
     const clearBuilding = document.getElementById('clearBuildingFilters');
     if (clearBuilding) {
         clearBuilding.addEventListener('click', () => {
-            buildingFilters.companyId = '';
-            buildingFilters.searchTerm = '';
+            const filters = getLocationFilters();
+            filters.building.companyId = '';
+            filters.building.searchTerm = '';
             
             const filterCompany = document.getElementById('filterBuildingCompany');
             const searchBuilding = document.getElementById('searchBuilding');
@@ -987,9 +990,10 @@ function initClearFilters() {
     const clearClassroom = document.getElementById('clearClassroomFilters');
     if (clearClassroom) {
         clearClassroom.addEventListener('click', () => {
-            classroomFilters.companyId = '';
-            classroomFilters.buildingId = '';
-            classroomFilters.searchTerm = '';
+            const filters = getLocationFilters();
+            filters.classroom.companyId = '';
+            filters.classroom.buildingId = '';
+            filters.classroom.searchTerm = '';
             
             const filterCompany = document.getElementById('filterClassroomCompany');
             const filterBuilding = document.getElementById('filterClassroomBuilding');
@@ -1017,7 +1021,9 @@ function applyCompanySearch() {
     const companiesTableBody = document.getElementById('companiesTableBody');
     if (!companiesTableBody) return;
 
-    const hasActiveFilters = !!companySearchTerm;
+    const filters = getLocationFilters();
+
+    const hasActiveFilters = !!filters.companySearchTerm;
     if (hasActiveFilters) {
         state.autoRefreshPaused = true;
         state.filtersActive = true;
@@ -1030,9 +1036,9 @@ function applyCompanySearch() {
     
     let filteredCompanies = state.companies;
     
-    if (companySearchTerm) {
+    if (filters.companySearchTerm) {
         filteredCompanies = filteredCompanies.filter(company =>
-            company.name.toLowerCase().includes(companySearchTerm)
+            company.name.toLowerCase().includes(filters.companySearchTerm)
         );
     }
     
@@ -1066,7 +1072,8 @@ function initBuildingFilters() {
     
     // Evento de cambio
     filterCompany.addEventListener('change', (e) => {
-        buildingFilters.companyId = e.target.value;
+        const filters = getLocationFilters();
+        filters.building.companyId = e.target.value;
         applyBuildingFilters();
     });
 }
@@ -1075,7 +1082,9 @@ function applyBuildingFilters() {
     const buildingsTableBody = document.getElementById('buildingsTableBody');
     if (!buildingsTableBody) return;
 
-    const hasActiveFilters = !!(buildingFilters.companyId || buildingFilters.searchTerm);
+    const filters = getLocationFilters();
+
+    const hasActiveFilters = !!(filters.building.companyId || filters.building.searchTerm);
     if (hasActiveFilters) {
         state.autoRefreshPaused = true;
         state.filtersActive = true;
@@ -1088,15 +1097,15 @@ function applyBuildingFilters() {
     
     let filteredBuildings = state.buildings;
     
-    if (buildingFilters.companyId) {
+    if (filters.building.companyId) {
         filteredBuildings = filteredBuildings.filter(building => 
-            building.company_id == buildingFilters.companyId
+            building.company_id == filters.building.companyId
         );
     }
     
-    if (buildingFilters.searchTerm) {
+    if (filters.building.searchTerm) {
         filteredBuildings = filteredBuildings.filter(building =>
-            building.name.toLowerCase().includes(buildingFilters.searchTerm)
+            building.name.toLowerCase().includes(filters.building.searchTerm)
         );
     }
     
@@ -1144,11 +1153,12 @@ function initClassroomLocationFilters() {
     
     // Evento de cambio de centro
     filterCompany.addEventListener('change', async (e) => {
-        classroomFilters.companyId = e.target.value;
-        classroomFilters.buildingId = '';
+        const filters = getLocationFilters();
+        filters.classroom.companyId = e.target.value;
+        filters.classroom.buildingId = '';
         
-        if (classroomFilters.companyId) {
-            const buildings = state.buildings.filter(b => b.company_id == classroomFilters.companyId);
+        if (filters.classroom.companyId) {
+            const buildings = state.buildings.filter(b => b.company_id == filters.classroom.companyId);
             filterBuilding.disabled = false;
             filterBuilding.innerHTML = '<option value="">Todos los edificios</option>' +
                 buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
@@ -1162,7 +1172,8 @@ function initClassroomLocationFilters() {
     
     // Evento de cambio de edificio
     filterBuilding.addEventListener('change', (e) => {
-        classroomFilters.buildingId = e.target.value;
+        const filters = getLocationFilters();
+        filters.classroom.buildingId = e.target.value;
         applyClassroomLocationFilters();
     });
 }
@@ -1171,7 +1182,9 @@ function applyClassroomLocationFilters() {
     const classroomsTableBody = document.getElementById('classroomsTableBody');
     if (!classroomsTableBody) return;
 
-    const hasActiveFilters = !!(classroomFilters.companyId || classroomFilters.buildingId || classroomFilters.searchTerm);
+    const filters = getLocationFilters();
+
+    const hasActiveFilters = !!(filters.classroom.companyId || filters.classroom.buildingId || filters.classroom.searchTerm);
     if (hasActiveFilters) {
         state.autoRefreshPaused = true;
         state.filtersActive = true;
@@ -1184,21 +1197,21 @@ function applyClassroomLocationFilters() {
     
     let filteredClassrooms = state.classrooms;
     
-    if (classroomFilters.companyId || classroomFilters.buildingId) {
+    if (filters.classroom.companyId || filters.classroom.buildingId) {
         filteredClassrooms = filteredClassrooms.filter(classroom => {
             const building = state.buildings.find(b => b.id === classroom.building_id);
             if (!building) return false;
             
-            if (classroomFilters.companyId && building.company_id != classroomFilters.companyId) return false;
-            if (classroomFilters.buildingId && classroom.building_id != classroomFilters.buildingId) return false;
+            if (filters.classroom.companyId && building.company_id != filters.classroom.companyId) return false;
+            if (filters.classroom.buildingId && classroom.building_id != filters.classroom.buildingId) return false;
             
             return true;
         });
     }
     
-    if (classroomFilters.searchTerm) {
+    if (filters.classroom.searchTerm) {
         filteredClassrooms = filteredClassrooms.filter(classroom =>
-            classroom.name.toLowerCase().includes(classroomFilters.searchTerm)
+            classroom.name.toLowerCase().includes(filters.classroom.searchTerm)
         );
     }
     
