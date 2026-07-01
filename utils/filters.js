@@ -556,15 +556,19 @@ async function applyRecordFilters() {
     
     console.log('[Filtros] Tiene filtros activos?', hasActiveFilters);
     
-    if (hasActiveFilters) {
-        state.autoRefreshPaused = true;
-        state.filtersActive = true;
-        showFilterIndicator(); // Mostrar indicador visual
-    } else {
-        // Si no hay filtros activos (período en 'all' y sin otros filtros), reactivar actualización
-        state.autoRefreshPaused = false;
-        state.filtersActive = false;
-        hideFilterIndicator(); // Ocultar indicador
+    // Solo la vista de registros debe controlar el estado global de auto-refresh.
+    // Evita que este filtro pise el estado cuando el usuario está en otras pestañas.
+    if (state.currentView === 'registros') {
+        if (hasActiveFilters) {
+            state.autoRefreshPaused = true;
+            state.filtersActive = true;
+            showFilterIndicator(); // Mostrar indicador visual
+        } else {
+            // Si no hay filtros activos (período en 'all' y sin otros filtros), reactivar actualización
+            state.autoRefreshPaused = false;
+            state.filtersActive = false;
+            hideFilterIndicator(); // Ocultar indicador
+        }
     }
     
     let filteredRecords = state.records;
