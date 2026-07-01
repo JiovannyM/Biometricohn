@@ -67,6 +67,35 @@ function resumeAutoRefreshFromManualAction(source) {
     }
 }
 
+function clickIfExists(id) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.click();
+    }
+}
+
+function clearFiltersForRefresh(viewName) {
+    switch (viewName) {
+        case 'dispositivos':
+            clickIfExists('clearDeviceFilters');
+            break;
+        case 'usuarios':
+            clickIfExists('clearUserFilters');
+            break;
+        case 'registros':
+            clickIfExists('clearRecordFilters');
+            break;
+        case 'ubicaciones':
+            clickIfExists('clearCompanyFilters');
+            clickIfExists('clearBuildingFilters');
+            clickIfExists('clearClassroomFilters');
+            break;
+        case 'comandos':
+            clickIfExists('clearCommandFilters');
+            break;
+    }
+}
+
 // Actualizar todos los datos
 async function refreshAll() {
     // Mantener sincronizado el estado con la vista activa real del DOM.
@@ -110,16 +139,19 @@ async function refreshAll() {
 // Event listeners para botones de refresh
 function initRefreshButtons() {
     elements.refreshDevices.addEventListener('click', () => {
+        clearFiltersForRefresh('dispositivos');
         resumeAutoRefreshFromManualAction('botón de dispositivos');
         fetchDevices();
     });
     
     elements.refreshPersons.addEventListener('click', () => {
+        clearFiltersForRefresh('usuarios');
         resumeAutoRefreshFromManualAction('botón de usuarios');
         fetchPersons();
     });
     
     elements.refreshRecords.addEventListener('click', async () => {
+        clearFiltersForRefresh('registros');
         resumeAutoRefreshFromManualAction('botón de registros');
         // Recargar usuarios primero, luego registros
         await fetchPersons();
@@ -128,6 +160,7 @@ function initRefreshButtons() {
 
     const refreshLocations = document.getElementById('refreshLocations');
     refreshLocations?.addEventListener('click', async () => {
+        clearFiltersForRefresh('ubicaciones');
         resumeAutoRefreshFromManualAction('botón de ubicaciones');
         await Promise.all([
             fetchCompanies(),
@@ -138,6 +171,7 @@ function initRefreshButtons() {
 
     const refreshCommands = document.getElementById('refreshCommands');
     refreshCommands?.addEventListener('click', async () => {
+        clearFiltersForRefresh('comandos');
         resumeAutoRefreshFromManualAction('botón de comandos');
         await Promise.all([
             fetchDevices(),
