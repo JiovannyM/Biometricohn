@@ -19,6 +19,34 @@ let filters = {
     classroomId: ''
 };
 
+function setCommandFilterPauseState() {
+    const hasActiveFilters = !!(
+        filters.searchText ||
+        filters.companyId ||
+        filters.buildingId ||
+        filters.classroomId ||
+        !filters.onlyConnected
+    );
+
+    if (hasActiveFilters) {
+        state.autoRefreshPaused = true;
+        state.filtersActive = true;
+
+        const indicator = document.getElementById('filterActiveIndicator');
+        if (indicator) {
+            indicator.style.display = 'flex';
+        }
+    } else {
+        state.autoRefreshPaused = false;
+        state.filtersActive = false;
+
+        const indicator = document.getElementById('filterActiveIndicator');
+        if (indicator) {
+            indicator.style.display = 'none';
+        }
+    }
+}
+
 /**
  * Inicializa el componente de comandos remotos
  */
@@ -408,6 +436,8 @@ function showStatus(element, type, message) {
  * Aplicar filtros al array de dispositivos
  */
 function applyFilters() {
+    setCommandFilterPauseState();
+
     let filtered = [...devices];
     
     // Filtro: Solo conectados
@@ -578,6 +608,14 @@ function clearFilters() {
         classroomSelect.value = '';
         classroomSelect.disabled = true;
         classroomSelect.innerHTML = '<option value="">Todas las aulas</option>';
+    }
+
+    // Reanudar actualización automática al limpiar filtros
+    state.autoRefreshPaused = false;
+    state.filtersActive = false;
+    const indicator = document.getElementById('filterActiveIndicator');
+    if (indicator) {
+        indicator.style.display = 'none';
     }
     
     // Refrescar selectores
