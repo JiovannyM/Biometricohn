@@ -1017,6 +1017,18 @@ function initClearFilters() {
     }
 }
 
+function canEditLocationsByRole() {
+    try {
+        const userInfo = localStorage.getItem('user_info');
+        if (!userInfo) return false;
+        const user = JSON.parse(userInfo);
+        return ['operator', 'admin', 'super_admin'].includes(user.role);
+    } catch (error) {
+        console.error('Error obteniendo rol del usuario:', error);
+        return false;
+    }
+}
+
 function applyCompanySearch() {
     const companiesTableBody = document.getElementById('companiesTableBody');
     if (!companiesTableBody) return;
@@ -1046,6 +1058,8 @@ function applyCompanySearch() {
         companiesTableBody.innerHTML = '<tr><td colspan="4" class="empty">No se encontraron centros</td></tr>';
         return;
     }
+
+    const canEditLocations = canEditLocationsByRole();
     
     companiesTableBody.innerHTML = filteredCompanies.map(company => `
         <tr>
@@ -1053,9 +1067,12 @@ function applyCompanySearch() {
             <td><strong>${company.name}</strong></td>
             <td>${formatDateTime(company.created_at)}</td>
             <td>
-                <button class="btn-edit-location btn-edit-company" data-id="${company.id}" data-name="${company.name}">
-                     Editar
-                </button>
+                ${canEditLocations ? `
+                    <button class="btn-edit-location btn-edit-company" data-id="${company.id}" data-name="${company.name}">
+                         Editar
+                    </button>
+                    <button class="btn-delete btn-delete-company" data-id="${company.id}">Eliminar</button>
+                ` : '<span style="color: #999;">🔒 Solo lectura</span>'}
             </td>
         </tr>
     `).join('');
@@ -1119,6 +1136,8 @@ function renderFilteredBuildings(filteredBuildings) {
         buildingsTableBody.innerHTML = '<tr><td colspan="5" class="empty">No se encontraron edificios con los filtros aplicados</td></tr>';
         return;
     }
+
+    const canEditLocations = canEditLocationsByRole();
     
     buildingsTableBody.innerHTML = filteredBuildings.map(building => {
         const company = state.companies.find(c => c.id === building.company_id);
@@ -1129,12 +1148,15 @@ function renderFilteredBuildings(filteredBuildings) {
                 <td>${company ? company.name : 'N/A'}</td>
                 <td>${formatDateTime(building.created_at)}</td>
                 <td>
-                    <button class="btn-edit-location btn-edit-building" 
-                        data-id="${building.id}" 
-                        data-name="${building.name}" 
-                        data-company-id="${building.company_id}">
-                         Editar
-                    </button>
+                    ${canEditLocations ? `
+                        <button class="btn-edit-location btn-edit-building" 
+                            data-id="${building.id}" 
+                            data-name="${building.name}" 
+                            data-company-id="${building.company_id}">
+                             Editar
+                        </button>
+                        <button class="btn-delete btn-delete-building" data-id="${building.id}">Eliminar</button>
+                    ` : '<span style="color: #999;">🔒 Solo lectura</span>'}
                 </td>
             </tr>
         `;
@@ -1225,6 +1247,8 @@ function renderFilteredClassrooms(filteredClassrooms) {
         classroomsTableBody.innerHTML = '<tr><td colspan="6" class="empty">No se encontraron aulas con los filtros aplicados</td></tr>';
         return;
     }
+
+    const canEditLocations = canEditLocationsByRole();
     
     classroomsTableBody.innerHTML = filteredClassrooms.map(classroom => {
         const building = state.buildings.find(b => b.id === classroom.building_id);
@@ -1237,13 +1261,16 @@ function renderFilteredClassrooms(filteredClassrooms) {
                 <td>${company ? company.name : 'N/A'}</td>
                 <td>${formatDateTime(classroom.created_at)}</td>
                 <td>
-                    <button class="btn-edit-location btn-edit-classroom" 
-                        data-id="${classroom.id}" 
-                        data-name="${classroom.name}"
-                        data-code="${classroom.code || ''}" 
-                        data-building-id="${classroom.building_id}">
-                         Editar
-                    </button>
+                    ${canEditLocations ? `
+                        <button class="btn-edit-location btn-edit-classroom" 
+                            data-id="${classroom.id}" 
+                            data-name="${classroom.name}"
+                            data-code="${classroom.code || ''}" 
+                            data-building-id="${classroom.building_id}">
+                             Editar
+                        </button>
+                        <button class="btn-delete btn-delete-classroom" data-id="${classroom.id}">Eliminar</button>
+                    ` : '<span style="color: #999;">🔒 Solo lectura</span>'}
                 </td>
             </tr>
         `;
