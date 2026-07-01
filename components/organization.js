@@ -294,7 +294,10 @@ function updateOrganizationUI() {
 }
 
 function reapplyLocationFiltersIfActive() {
-    const activeView = document.querySelector('.view-section.active')?.id?.replace('view-', '') || state.currentView;
+    const activeView =
+        document.querySelector('.menu-item.active')?.getAttribute('data-view') ||
+        document.querySelector('.view-section.active')?.id?.replace('view-', '') ||
+        state.currentView;
     if (activeView !== 'ubicaciones') {
         return;
     }

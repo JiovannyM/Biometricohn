@@ -11,6 +11,12 @@ import { initCommands, updateCommandsData, updateFilters } from './components/co
 import { initDeviceFilters, initUserFilters, initRecordFilters, initLocationFilters, showFilterIndicator, hideFilterIndicator } from './utils/filters.js';
 
 function getActiveViewNameFromDOM() {
+    const activeMenuItem = document.querySelector('.menu-item.active');
+    const activeMenuView = activeMenuItem?.getAttribute('data-view');
+    if (activeMenuView) {
+        return activeMenuView;
+    }
+
     const activeSection = document.querySelector('.view-section.active');
     if (!activeSection?.id) return state.currentView;
 
