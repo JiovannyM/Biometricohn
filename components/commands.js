@@ -194,6 +194,9 @@ function setupFilterListeners() {
     const onlyConnectedCheckbox = document.getElementById('filterOnlyConnected');
     onlyConnectedCheckbox?.addEventListener('change', (e) => {
         filters.onlyConnected = e.target.checked;
+        if (state.currentView === 'comandos') {
+            setCommandFilterPauseState();
+        }
         populateDeviceSelectors();
         console.log('[Filtros] Solo conectados:', filters.onlyConnected);
     });
@@ -202,6 +205,11 @@ function setupFilterListeners() {
     const searchInput = document.getElementById('filterDeviceSearch');
     searchInput?.addEventListener('input', (e) => {
         filters.searchText = e.target.value.toLowerCase().trim();
+        if (state.currentView === 'comandos' && filters.searchText) {
+            state.autoRefreshPaused = true;
+            state.filtersActive = true;
+            showFilterIndicator();
+        }
         populateDeviceSelectors();
         console.log('[Filtros] Búsqueda:', filters.searchText);
     });
@@ -217,6 +225,9 @@ function setupFilterListeners() {
         updateBuildingFilter();
         updateClassroomFilter();
         
+        if (state.currentView === 'comandos') {
+            setCommandFilterPauseState();
+        }
         populateDeviceSelectors();
         console.log('[Filtros] Centro:', filters.companyId);
     });
@@ -228,6 +239,9 @@ function setupFilterListeners() {
         filters.classroomId = ''; // Reset cascada
         
         updateClassroomFilter();
+        if (state.currentView === 'comandos') {
+            setCommandFilterPauseState();
+        }
         populateDeviceSelectors();
         console.log('[Filtros] Edificio:', filters.buildingId);
     });
@@ -236,6 +250,9 @@ function setupFilterListeners() {
     const classroomSelect = document.getElementById('filterCommandClassroom');
     classroomSelect?.addEventListener('change', (e) => {
         filters.classroomId = e.target.value;
+        if (state.currentView === 'comandos') {
+            setCommandFilterPauseState();
+        }
         populateDeviceSelectors();
         console.log('[Filtros] Aula:', filters.classroomId);
     });

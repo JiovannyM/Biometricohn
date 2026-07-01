@@ -901,6 +901,14 @@ function initSearchInputs() {
     if (searchCompany) {
         searchCompany.addEventListener('input', (e) => {
             companySearchTerm = e.target.value.toLowerCase();
+            if (companySearchTerm) {
+                state.autoRefreshPaused = true;
+                state.filtersActive = true;
+                showFilterIndicator();
+            } else {
+                applyCompanySearch();
+                return;
+            }
             applyCompanySearch();
         });
     }
@@ -910,6 +918,11 @@ function initSearchInputs() {
     if (searchBuilding) {
         searchBuilding.addEventListener('input', (e) => {
             buildingFilters.searchTerm = e.target.value.toLowerCase();
+            if (buildingFilters.companyId || buildingFilters.searchTerm) {
+                state.autoRefreshPaused = true;
+                state.filtersActive = true;
+                showFilterIndicator();
+            }
             applyBuildingFilters();
         });
     }
@@ -919,6 +932,11 @@ function initSearchInputs() {
     if (searchClassroom) {
         searchClassroom.addEventListener('input', (e) => {
             classroomFilters.searchTerm = e.target.value.toLowerCase();
+            if (classroomFilters.companyId || classroomFilters.buildingId || classroomFilters.searchTerm) {
+                state.autoRefreshPaused = true;
+                state.filtersActive = true;
+                showFilterIndicator();
+            }
             applyClassroomLocationFilters();
         });
     }
